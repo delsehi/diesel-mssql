@@ -1,0 +1,16 @@
+[package]
+name = "diesel_tiberius"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chrono = "0.4.38"
+diesel = { version = "2.2.4", default-features = false, features = [
+    "chrono",
+    "i-implement-a-third-party-backend-and-opt-into-breaking-changes",
+] }
+tiberius = "0.12.3"
+tokio = { version = "1.40.0", features = ["full"] }
+tokio-util = { version = "0.7.12", features = ["compat"] }
+[dev-dependencies]
+dotenvy = "0.15.7"

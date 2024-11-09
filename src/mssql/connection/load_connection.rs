@@ -32,11 +32,12 @@ impl LoadConnection<DefaultLoadingMode> for MssqlConnection {
         let mut query_builder = MssqlQueryBuilder::new();
         source.to_sql(&mut query_builder, &Mssql).unwrap();
         let sql = query_builder.finish();
+        let debug_sql = sql.clone();
         let mut query = tiberius::Query::new(sql);
         bc.binds.into_iter().for_each(|b| {
             query.bind(b);
         });
-        let query_stream = self.rt.block_on(query.query(&mut self.client)).unwrap();
+        let query_stream = self.rt.block_on(query.query(&mut self.client)).expect(&debug_sql);
         let rows = self.rt.block_on(query_stream.into_first_result()).unwrap();
         Ok(Cursor::new(rows))
     }

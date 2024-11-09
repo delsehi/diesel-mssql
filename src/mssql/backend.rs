@@ -1,28 +1,23 @@
-// use super::connection::bind_collector::MssqlBindCollector;
-use diesel::query_builder::bind_collector::RawBytesBindCollector;
 use super::query_builder::MssqlQueryBuilder;
-// use super::types::MssqlTypeMetadata;
-use tiberius::ColumnType;
 use diesel::backend::*;
+use diesel::query_builder::bind_collector::RawBytesBindCollector;
 use diesel::sql_types::TypeMetadata;
 use tiberius::ColumnData;
+use tiberius::ColumnType;
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct Mssql;
 
 impl Backend for Mssql {
     type QueryBuilder = MssqlQueryBuilder;
-
-    // type RawValue<'a> = TiberiusValue<'a>;
     type RawValue<'a> = ColumnData<'a>;
-
-    // type BindCollector<'a> = MssqlBindCollector<'a>;
     type BindCollector<'a> = RawBytesBindCollector<Mssql>;
-    
 }
 
 impl TrustedBackend for Mssql {}
 impl DieselReserveSpecialization for Mssql {}
+
+pub struct MssqlSelectSyntax;
 
 impl SqlDialect for Mssql {
     type ReturningClause = sql_dialect::returning_clause::DoesNotSupportReturningClause;
@@ -35,9 +30,8 @@ impl SqlDialect for Mssql {
     type EmptyFromClauseSyntax = sql_dialect::from_clause_syntax::AnsiSqlFromClauseSyntax;
     type ExistsSyntax = sql_dialect::exists_syntax::AnsiSqlExistsSyntax;
     type ArrayComparison = sql_dialect::array_comparison::AnsiSqlArrayComparison;
-    type SelectStatementSyntax = sql_dialect::select_statement_syntax::AnsiSqlSelectStatement;
+    type SelectStatementSyntax = MssqlSelectSyntax;
     type AliasSyntax = sql_dialect::alias_syntax::AsAliasSyntax;
-    
 }
 
 impl TypeMetadata for Mssql {

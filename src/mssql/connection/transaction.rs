@@ -10,15 +10,27 @@ impl TransactionManager<MssqlConnection> for MssqlTransactionManager {
     type TransactionStateData = Self;
 
     fn begin_transaction(conn: &mut MssqlConnection) -> diesel::QueryResult<()> {
-        todo!()
+        conn.rt
+            .block_on(conn.client.simple_query("BEGIN TRAN"))
+            .map_err(|_| diesel::result::Error::BrokenTransactionManager)
+            .unwrap();
+        Ok(())
     }
 
     fn rollback_transaction(conn: &mut MssqlConnection) -> diesel::QueryResult<()> {
-        todo!()
+        conn.rt
+            .block_on(conn.client.simple_query("ROLLBACK"))
+            .map_err(|_| diesel::result::Error::BrokenTransactionManager)
+            .unwrap();
+        Ok(())
     }
 
     fn commit_transaction(conn: &mut MssqlConnection) -> diesel::QueryResult<()> {
-        todo!()
+        conn.rt
+            .block_on(conn.client.simple_query("COMMIT"))
+            .map_err(|_| diesel::result::Error::BrokenTransactionManager)
+            .unwrap();
+        Ok(())
     }
 
     fn transaction_manager_status_mut(conn: &mut MssqlConnection) -> &mut TransactionManagerStatus {

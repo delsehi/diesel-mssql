@@ -1,16 +1,13 @@
-use std::borrow::BorrowMut;
-
 use crate::mssql::query_builder::MssqlQueryBuilder;
 
 use super::cursor::Cursor;
 use super::row::MssqlRow;
+use super::Mssql;
 use super::MssqlConnection;
-use super::{cursor, Mssql};
 use diesel::connection::{DefaultLoadingMode, LoadConnection};
 use diesel::expression::QueryMetadata;
 use diesel::query_builder::bind_collector::RawBytesBindCollector;
 use diesel::query_builder::{Query, QueryBuilder, QueryFragment, QueryId};
-use diesel::query_dsl::methods::LoadQuery;
 use diesel::result::QueryResult;
 use diesel::row::RowIndex;
 use diesel::row::{Field, Row, RowSealed};
@@ -37,7 +34,10 @@ impl LoadConnection<DefaultLoadingMode> for MssqlConnection {
         bc.binds.into_iter().for_each(|b| {
             query.bind(b);
         });
-        let query_stream = self.rt.block_on(query.query(&mut self.client)).expect(&debug_sql);
+        let query_stream = self
+            .rt
+            .block_on(query.query(&mut self.client))
+            .expect(&debug_sql);
         let rows = self.rt.block_on(query_stream.into_first_result()).unwrap();
         Ok(Cursor::new(rows))
     }

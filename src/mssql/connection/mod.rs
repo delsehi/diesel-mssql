@@ -1,37 +1,43 @@
-pub(crate) mod transaction;
+mod cursor;
 mod load_connection;
 mod row;
-mod cursor;
+mod transaction;
 
+use crate::mssql::query_builder::MssqlQueryBuilder;
 use diesel::{
     connection::{
-        ConnectionSealed, DefaultLoadingMode, Instrumentation, LoadConnection, SimpleConnection,
+        ConnectionSealed, Instrumentation, InstrumentationEvent, SimpleConnection,
         TransactionManager,
     },
     query_builder::{bind_collector::RawBytesBindCollector, QueryBuilder, QueryFragment, QueryId},
     Connection, QueryResult,
 };
-use tiberius::{Client, Query, Row};
+use tiberius::{Client, Query};
 use tokio::{net::TcpStream, runtime::Runtime};
 use tokio_util::compat::{Compat, TokioAsyncWriteCompatExt};
 use transaction::MssqlTransactionManager;
-
-use crate::mssql::query_builder::MssqlQueryBuilder;
 
 use super::Mssql;
 
 pub struct MssqlConnection {
     client: Client<Compat<TcpStream>>,
+    transaction_state: MssqlTransactionManager,
+    instrumentation: Option<Box<dyn Instrumentation>>,
     rt: Runtime,
 }
 
 impl SimpleConnection for MssqlConnection {
     fn batch_execute(&mut self, query: &str) -> diesel::QueryResult<()> {
+        if let Some(i) = &mut self.instrumentation {
+            i.on_connection_event(InstrumentationEvent::start_query(
+                &diesel::connection::StrQueryHelper::new(query),
+            ));
+        }
         let _ = self
             .rt
             .block_on(self.client.simple_query(query))
             // TODO: Handle this error
-            .expect("Could not make a simple query");
+            .expect(&format!("Query failed: {}", query));
         Ok(())
     }
 }
@@ -97,7 +103,15 @@ impl Connection for MssqlConnection {
         let client = rt
             .block_on(Client::connect(config, tcp.compat_write()))
             .expect("Could not connect to client");
-        Ok(MssqlConnection { client, rt })
+        let transaction_state = MssqlTransactionManager;
+
+        let mut instrumentation = diesel::connection::get_default_instrumentation();
+        Ok(MssqlConnection {
+            client,
+            rt,
+            instrumentation,
+            transaction_state,
+        })
     }
 
     fn execute_returning_count<T>(&mut self, source: &T) -> QueryResult<usize>
@@ -123,18 +137,17 @@ impl Connection for MssqlConnection {
     fn transaction_state(
         &mut self,
     ) -> &mut <Self::TransactionManager as TransactionManager<Self>>::TransactionStateData {
-        todo!()
+        &mut self.transaction_state
     }
 
     fn instrumentation(&mut self) -> &mut dyn Instrumentation {
-        todo!()
+        &mut self.instrumentation
     }
 
     fn set_instrumentation(&mut self, instrumentation: impl diesel::connection::Instrumentation) {
-        todo!()
+        self.instrumentation = Some(Box::new(instrumentation));
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -184,7 +197,13 @@ mod tests {
         let client = rt
             .block_on(Client::connect(config, tcp.compat_write()))
             .unwrap();
-        let mut conn = MssqlConnection { client, rt };
+        let transaction_state = MssqlTransactionManager;
+        let mut conn = MssqlConnection {
+            client,
+            rt,
+            instrumentation: None,
+            transaction_state,
+        };
         let _result = conn.batch_execute("SELECT 1").unwrap();
     }
 }

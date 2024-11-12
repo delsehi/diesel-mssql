@@ -9,9 +9,6 @@ use diesel::expression::QueryMetadata;
 use diesel::query_builder::bind_collector::RawBytesBindCollector;
 use diesel::query_builder::{Query, QueryBuilder, QueryFragment, QueryId};
 use diesel::result::QueryResult;
-use diesel::row::RowIndex;
-use diesel::row::{Field, Row, RowSealed};
-use tiberius::{Column, ColumnData};
 
 impl LoadConnection<DefaultLoadingMode> for MssqlConnection {
     type Row<'conn, 'query> = MssqlRow;

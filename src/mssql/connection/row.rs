@@ -1,6 +1,6 @@
 use super::Mssql;
-use diesel::row::{PartialRow, RowIndex};
 use diesel::row::{Field, RowSealed};
+use diesel::row::{PartialRow, RowIndex};
 use tiberius::{Column, ColumnData};
 
 pub struct MssqlField<'a> {
@@ -38,7 +38,12 @@ impl RowIndex<usize> for MssqlRow {
 }
 impl<'a> RowIndex<&'a str> for MssqlRow {
     fn idx(&self, idx: &'a str) -> Option<usize> {
-        todo!()
+        for (i, col) in self.inner_row.columns().into_iter().enumerate() {
+            if col.name() == idx {
+                return Some(i);
+            }
+        }
+        None
     }
 }
 

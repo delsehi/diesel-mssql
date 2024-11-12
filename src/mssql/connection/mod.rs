@@ -105,7 +105,7 @@ impl Connection for MssqlConnection {
             .expect("Could not connect to client");
         let transaction_state = MssqlTransactionManager;
 
-        let mut instrumentation = diesel::connection::get_default_instrumentation();
+        let instrumentation = diesel::connection::get_default_instrumentation();
         Ok(MssqlConnection {
             client,
             rt,
@@ -129,7 +129,6 @@ impl Connection for MssqlConnection {
         });
 
         let result = self.rt.block_on(query.execute(&mut self.client)).unwrap();
-        // let result = self.rt.block_on(self.client.execute(sql, &[])).unwrap();
         let rows_affected = *result.rows_affected().first().unwrap() as usize;
         Ok(rows_affected)
     }

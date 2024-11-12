@@ -107,7 +107,7 @@ impl ToSql<sql_types::Decimal, Mssql> for f64 {
             .map_err(Into::into)
     }
 }
-
+// Text
 impl FromSql<sql_types::Text, Mssql> for String {
     fn from_sql(bytes: ColumnData<'_>) -> deserialize::Result<Self> {
         if let ColumnData::String(Some(val)) = bytes {

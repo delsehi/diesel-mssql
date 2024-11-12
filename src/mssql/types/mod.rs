@@ -88,8 +88,3 @@ impl HasSqlType<Timestamp> for Mssql {
         ColumnType::Timen
     }
 }
-// impl HasSqlType<TinyInt> for Mssql {
-//     fn metadata(_: &mut Self::MetadataLookup) -> Self::TypeMetadata {
-//         MssqlTypeMetadata::Int
-//     }
-// }

@@ -69,7 +69,35 @@ fn can_use_transaction() {
     dotenv().unwrap();
     let database_url = std::env::var("CONNECTION_STRING").unwrap();
     let mut conn1 = MssqlConnection::establish(&database_url).unwrap();
-    let mut conn2 = MssqlConnection::establish(&database_url).unwrap();
+    let conn2 = MssqlConnection::establish(&database_url).unwrap();
+    setup(&mut conn1);
+    diesel::insert_into(users::table)
+        .values((users::columns::id.eq(1), users::columns::name.eq("Jane")))
+        .execute(&mut conn1)
+        .unwrap();
+    let count: i64 = users::table.count().get_result(&mut conn1).unwrap();
+    assert_eq!(count, 1);
+
+    conn1
+        .transaction::<_, diesel::result::Error, _>(|connection| {
+            connection
+                .batch_execute("INSERT INTO users(id, name) VALUES (4, 'HEHE')")
+                .unwrap();
+            let count: i64 = users::table.count().get_result(connection).unwrap();
+            assert_eq!(count, 2);
+            Ok(())
+        })
+        .unwrap();
+}
+
+
+#[test]
+#[serial]
+fn remove_me() {
+    dotenv().unwrap();
+    let database_url = std::env::var("CONNECTION_STRING").unwrap();
+    let mut conn1 = MssqlConnection::establish(&database_url).unwrap();
+    let conn2 = MssqlConnection::establish(&database_url).unwrap();
     setup(&mut conn1);
     diesel::insert_into(users::table)
         .values((users::columns::id.eq(1), users::columns::name.eq("Jane")))

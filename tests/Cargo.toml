@@ -1,0 +1,18 @@
+[package]
+name = "tests"
+version = "0.1.0"
+edition = "2021"
+autotests = false
+publish = false
+
+[dependencies]
+diesel = { version = "2.2.4", default-features = false, features = ["chrono"] }
+diesel_migrations = "2.2.0"
+
+diesel_mssql = { path = "../" }
+dotenvy = "0.15.7"
+
+[[test]]
+name = "integration_tests"
+path = "tests/lib.rs"
+harness = true

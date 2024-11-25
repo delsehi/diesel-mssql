@@ -1,6 +1,6 @@
+use super::connection::MssqlBindCollector;
 use super::query_builder::MssqlQueryBuilder;
 use diesel::backend::*;
-use diesel::query_builder::bind_collector::RawBytesBindCollector;
 use diesel::sql_types::TypeMetadata;
 use tiberius::ColumnData;
 use tiberius::ColumnType;
@@ -10,8 +10,8 @@ pub struct Mssql;
 
 impl Backend for Mssql {
     type QueryBuilder = MssqlQueryBuilder;
+    type BindCollector<'a> = MssqlBindCollector<'a>;
     type RawValue<'a> = ColumnData<'a>;
-    type BindCollector<'a> = RawBytesBindCollector<Mssql>;
 }
 
 impl TrustedBackend for Mssql {}
@@ -23,8 +23,8 @@ impl SqlDialect for Mssql {
     type ReturningClause = sql_dialect::returning_clause::DoesNotSupportReturningClause;
     type OnConflictClause = sql_dialect::on_conflict_clause::DoesNotSupportOnConflictClause;
     type InsertWithDefaultKeyword =
-        sql_dialect::default_keyword_for_insert::DoesNotSupportDefaultKeyword;
-    type BatchInsertSupport = sql_dialect::batch_insert_support::DoesNotSupportBatchInsert;
+        sql_dialect::default_keyword_for_insert::IsoSqlDefaultKeyword;
+    type BatchInsertSupport = sql_dialect::batch_insert_support::PostgresLikeBatchInsertSupport;
     type ConcatClause = sql_dialect::concat_clause::ConcatWithPipesClause;
     type DefaultValueClauseForInsert = sql_dialect::default_value_clause::AnsiDefaultValueClause;
     type EmptyFromClauseSyntax = sql_dialect::from_clause_syntax::AnsiSqlFromClauseSyntax;

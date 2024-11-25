@@ -1,21 +1,24 @@
+mod bind_collector;
 mod cursor;
 mod load_connection;
 mod row;
-mod transaction;
+mod transaction_manager;
 
 use crate::mssql::query_builder::MssqlQueryBuilder;
+pub use bind_collector::{BindValue, MssqlBindCollector};
 use diesel::{
     connection::{
         ConnectionSealed, Instrumentation, InstrumentationEvent, SimpleConnection,
         TransactionManager,
     },
-    query_builder::{bind_collector::RawBytesBindCollector, QueryBuilder, QueryFragment, QueryId},
-    Connection, QueryResult,
+    migration::MigrationConnection,
+    query_builder::{QueryBuilder, QueryFragment, QueryId},
+    Connection, QueryResult, RunQueryDsl,
 };
 use tiberius::{Client, Query};
 use tokio::{net::TcpStream, runtime::Runtime};
 use tokio_util::compat::{Compat, TokioAsyncWriteCompatExt};
-use transaction::MssqlTransactionManager;
+use transaction_manager::MssqlTransactionManager;
 
 use super::Mssql;
 
@@ -37,7 +40,7 @@ impl SimpleConnection for MssqlConnection {
             .rt
             .block_on(self.client.simple_query(query))
             // TODO: Handle this error
-            .expect(&format!("Query failed: {}", query));
+            .unwrap_or_else(|_| panic!("Query failed: {}", query));
         Ok(())
     }
 }
@@ -103,7 +106,9 @@ impl Connection for MssqlConnection {
         let client = rt
             .block_on(Client::connect(config, tcp.compat_write()))
             .expect("Could not connect to client");
-        let transaction_state = MssqlTransactionManager;
+        let transaction_state = MssqlTransactionManager {
+            ..Default::default()
+        };
 
         let instrumentation = diesel::connection::get_default_instrumentation();
         Ok(MssqlConnection {
@@ -118,17 +123,61 @@ impl Connection for MssqlConnection {
     where
         T: QueryFragment<Self::Backend> + QueryId,
     {
-        let mut bc = RawBytesBindCollector::<Mssql>::new();
+        let mut bc = MssqlBindCollector::new();
         source.collect_binds(&mut bc, &mut (), &Mssql).unwrap();
         let mut query_builder = MssqlQueryBuilder::new();
         source.to_sql(&mut query_builder, &Mssql).unwrap();
         let sql = query_builder.finish();
+        let my_sql = sql.clone();
         let mut query = Query::new(sql);
-        bc.binds.into_iter().for_each(|b| {
-            query.bind(b);
-        });
+        for b in bc.binds.into_iter() {
+            // b.bind_to_query(&mut query);
+            match b {
+                BindValue::Integer(val) => {
+                    query.bind(*val);
+                }
+                BindValue::Text(val) => {
+                    query.bind(val);
+                }
+                BindValue::Date(val) => {
+                    query.bind(*val);
+                }
 
-        let result = self.rt.block_on(query.execute(&mut self.client)).unwrap();
+                BindValue::Bool(val) => query.bind(*val),
+                BindValue::NotSet(_) => todo!(),
+                BindValue::Bigint(val) => {
+                    query.bind(*val);
+                }
+                BindValue::Binary(val) => {
+                    query.bind(val);
+                }
+                // BindValue::Double() => {
+                //     query.bind(*val);
+                // },
+                BindValue::Decimal(val) => {
+                    query.bind(*val);
+                }
+                BindValue::Float(val) => {
+                    query.bind(*val);
+                }
+                BindValue::SmallInt(val) => {
+                    query.bind(*val);
+                }
+                BindValue::Time(val) => {
+                    query.bind(*val);
+                }
+                BindValue::Timestamp(val) => {
+                    query.bind(*val);
+                }
+            }
+        }
+        // bc.binds.into_iter().for_each(|b| {
+        //     b.bind_to_query(&mut query);
+        // });
+        let result = self
+            .rt
+            .block_on(query.execute(&mut self.client))
+            .expect(&my_sql);
         let rows_affected = *result.rows_affected().first().unwrap() as usize;
         Ok(rows_affected)
     }
@@ -145,6 +194,13 @@ impl Connection for MssqlConnection {
 
     fn set_instrumentation(&mut self, instrumentation: impl diesel::connection::Instrumentation) {
         self.instrumentation = Some(Box::new(instrumentation));
+    }
+}
+
+pub const CREATE_MIGRATIONS_TABLE: &str = include_str!("setup_migration_table.sql");
+impl MigrationConnection for MssqlConnection {
+    fn setup(&mut self) -> QueryResult<usize> {
+        diesel::sql_query(CREATE_MIGRATIONS_TABLE).execute(self)
     }
 }
 
@@ -196,13 +252,15 @@ mod tests {
         let client = rt
             .block_on(Client::connect(config, tcp.compat_write()))
             .unwrap();
-        let transaction_state = MssqlTransactionManager;
+        let transaction_state = MssqlTransactionManager {
+            ..Default::default()
+        };
         let mut conn = MssqlConnection {
             client,
             rt,
             instrumentation: None,
             transaction_state,
         };
-        let _result = conn.batch_execute("SELECT 1").unwrap();
+        conn.batch_execute("SELECT 1").unwrap();
     }
 }

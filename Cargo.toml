@@ -1,17 +1,28 @@
 [package]
-name = "diesel_tiberius"
+name = "diesel_mssql"
+authors = ["Delfi Sehidic"]
+license = "MIT OR Apache-2.0"
+description = "a SQL Server database adapter for Diesel based on Tiberius"
+readme = "README.md"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-chrono = "0.4.38"
+chrono = { version = "0.4.38", optional = true }
 diesel = { version = "2.2.4", default-features = false, features = [
-    "chrono",
     "i-implement-a-third-party-backend-and-opt-into-breaking-changes",
 ] }
-tiberius = "0.12.3"
+tiberius = { version = "0.12.3" }
 tokio = { version = "1.40.0", features = ["full"] }
 tokio-util = { version = "0.7.12", features = ["compat"] }
+
 [dev-dependencies]
 dotenvy = "0.15.7"
 serial_test = "3.2.0"
+
+[features]
+default = ["chrono"]
+chrono = ["dep:chrono", "diesel/chrono", "tiberius/chrono"]
+
+[workspace]
+exclude = ["tests"]

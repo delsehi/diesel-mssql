@@ -38,7 +38,7 @@ impl RowIndex<usize> for MssqlRow {
 }
 impl<'a> RowIndex<&'a str> for MssqlRow {
     fn idx(&self, idx: &'a str) -> Option<usize> {
-        for (i, col) in self.inner_row.columns().into_iter().enumerate() {
+        for (i, col) in self.inner_row.columns().iter().enumerate() {
             if col.name() == idx {
                 return Some(i);
             }
@@ -53,7 +53,7 @@ impl<'a> diesel::row::Row<'a, Mssql> for MssqlRow {
     type InnerPartialRow = Self;
 
     fn field_count(&self) -> usize {
-        self.inner_row.columns().len() as usize
+        self.inner_row.columns().len()
     }
 
     fn get<'b, I>(&'b self, idx: I) -> Option<Self::Field<'b>>
@@ -66,10 +66,10 @@ impl<'a> diesel::row::Row<'a, Mssql> for MssqlRow {
         let col = row.columns().get(idx);
         let cell = row.cells().nth(idx);
         if let Some((_, value)) = cell {
-            return Some(MssqlField {
+            Some(MssqlField {
                 column_info: col,
                 field_value: value.clone(),
-            });
+            })
         } else {
             None
         }

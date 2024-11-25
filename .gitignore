@@ -1,2 +1,6 @@
-/target
+**/target
 .env
+**/bin
+**/obj
+diesel_test_database
+**/.env

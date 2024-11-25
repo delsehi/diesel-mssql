@@ -1,14 +1,11 @@
+#[cfg(feature = "chrono")]
+mod dates;
 mod primitives;
 use super::backend::*;
 use diesel::sql_types::HasSqlType;
 use diesel::sql_types::*;
 use tiberius::ColumnType;
 
-// pub enum MssqlTypeMetadata {
-//     Int,
-//     Text,
-//     DateTime,
-// }
 impl HasSqlType<BigInt> for Mssql {
     fn metadata(_: &mut Self::MetadataLookup) -> Self::TypeMetadata {
         ColumnType::Int8
@@ -27,17 +24,6 @@ impl HasSqlType<Bool> for Mssql {
     }
 }
 
-impl HasSqlType<Date> for Mssql {
-    fn metadata(_: &mut Self::MetadataLookup) -> Self::TypeMetadata {
-        ColumnType::Datetime2
-    }
-}
-
-// impl HasSqlType<Decimal> for Mssql {
-//     fn metadata(_: &mut Self::MetadataLookup) -> Self::TypeMetadata {
-//         MssqlTypeMetadata::Int
-//     }
-// }
 impl HasSqlType<Double> for Mssql {
     fn metadata(_: &mut Self::MetadataLookup) -> Self::TypeMetadata {
         ColumnType::Float4
@@ -56,16 +42,6 @@ impl HasSqlType<Integer> for Mssql {
     }
 }
 
-// impl HasSqlType<Interval> for Mssql {
-//     fn metadata(_: &mut Self::MetadataLookup) -> Self::TypeMetadata {
-//         MssqlTypeMetadata::Int
-//     }
-// }
-// impl HasSqlType<Json> for Mssql {
-//     fn metadata(_: &mut Self::MetadataLookup) -> Self::TypeMetadata {
-//         MssqlTypeMetadata::Int
-//     }
-// }
 impl HasSqlType<SmallInt> for Mssql {
     fn metadata(_: &mut Self::MetadataLookup) -> Self::TypeMetadata {
         ColumnType::Int1
@@ -80,11 +56,16 @@ impl HasSqlType<Text> for Mssql {
 
 impl HasSqlType<Time> for Mssql {
     fn metadata(_: &mut Self::MetadataLookup) -> Self::TypeMetadata {
-        ColumnType::Datetime2
+        ColumnType::Timen
     }
 }
 impl HasSqlType<Timestamp> for Mssql {
     fn metadata(_: &mut Self::MetadataLookup) -> Self::TypeMetadata {
-        ColumnType::Timen
+        ColumnType::Datetime2
+    }
+}
+impl HasSqlType<Date> for Mssql {
+    fn metadata(_: &mut Self::MetadataLookup) -> Self::TypeMetadata {
+        ColumnType::Daten
     }
 }

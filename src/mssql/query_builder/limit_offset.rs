@@ -32,31 +32,9 @@ where
         &'b self,
         mut out: diesel::query_builder::AstPass<'_, 'b, Mssql>,
     ) -> diesel::QueryResult<()> {
-        // TOP() syntax needed if it's a parameter as in Diesel.
-        // Diesel uses a varchar it seems, need to cast this to an integer for SQL Server.
-        out.push_sql(" TOP(CAST(");
+        out.push_sql(" TOP(");
         self.limit_clause.0.walk_ast(out.reborrow())?;
-        out.push_sql(" AS INT)) ");
+        out.push_sql(") ");
         Ok(())
     }
 }
-
-impl<O> QueryFragment<Mssql> for LimitOffsetClause<NoLimitClause, OffsetClause<O>> where
-    OffsetClause<O>: QueryFragment<Mssql>
-{
-    fn walk_ast<'b>(&'b self, pass: AstPass<'_, 'b, Mssql>) -> diesel::QueryResult<()> {
-        todo!()
-    }
-}
-
-// impl<E> QueryFragment<Mssql> for diesel::query_builder::LimitClause<E>
-// where
-//     diesel::query_builder::LimitClause<E>: QueryFragment<Mssql>,
-// {
-//     fn walk_ast<'b>(
-//         &'b self,
-//         pass: diesel::query_builder::AstPass<'_, 'b, Mssql>,
-//     ) -> diesel::QueryResult<()> {
-//         todo!()
-//     }
-// }

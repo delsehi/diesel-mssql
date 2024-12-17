@@ -176,7 +176,7 @@ pub struct Like {
     pub user_id: i32,
 }
 
-pub type TestConnection = diesel_mssql::mssql::MssqlConnection;
+pub type TestConnection = diesel_mssql::MssqlConnection;
 
 pub type TestBackend = <TestConnection as Connection>::Backend;
 
@@ -216,90 +216,22 @@ pub fn connection_without_transaction() -> TestConnection {
     MIGRATION_GUARD.call_once(|| {
         result.run_pending_migrations(MIGRATIONS).unwrap();
     });
-
     result
 }
 pub fn backend_specific_connection() -> TestConnection {
     let connection_url = dotenvy::var("MSSQL_DATABASE_URL")
         .or_else(|_| dotenvy::var("DATABASE_URL"))
         .expect("DATABASE_URL must be set in order to run tests");
-    diesel_mssql::mssql::MssqlConnection::establish(&connection_url).unwrap()
+    diesel_mssql::MssqlConnection::establish(&connection_url).unwrap()
 }
-// #[cfg(feature = "postgres")]
-// pub fn backend_specific_connection() -> TestConnection {
-//     let connection_url = dotenvy::var("PG_DATABASE_URL")
-//         .or_else(|_| dotenvy::var("DATABASE_URL"))
-//         .expect("DATABASE_URL must be set in order to run tests");
-//     let mut conn = PgConnection::establish(&connection_url).unwrap();
-
-//     // we do match the error messages in some tests and depending on your
-//     // operating system configuration postgres may return localized error messages
-//     // This forces the language to english
-//     diesel::sql_query("SET lc_messages TO 'en_US.UTF-8'")
-//         .execute(&mut conn)
-//         .unwrap();
-//     conn
-// }
-
-// #[cfg(feature = "sqlite")]
-// pub fn backend_specific_connection() -> TestConnection {
-//     let mut conn = SqliteConnection::establish(":memory:").unwrap();
-//     diesel::sql_query("PRAGMA foreign_keys = ON")
-//         .execute(&mut conn)
-//         .unwrap();
-//     conn
-// }
-
-// #[cfg(feature = "mysql")]
-// pub fn backend_specific_connection() -> TestConnection {
-//     let connection_url = dotenvy::var("MYSQL_DATABASE_URL")
-//         .or_else(|_| dotenvy::var("DATABASE_URL"))
-//         .expect("DATABASE_URL must be set in order to run tests");
-//     MysqlConnection::establish(&connection_url).unwrap()
-// }
-
-// #[cfg(feature = "postgres")]
-// pub fn disable_foreign_keys(connection: &mut TestConnection) {
-//     diesel::sql_query("SET CONSTRAINTS ALL DEFERRED")
-//         .execute(connection)
-//         .unwrap();
-// }
-
-// #[cfg(feature = "mysql")]
-// pub fn disable_foreign_keys(connection: &mut TestConnection) {
-//     diesel::sql_query("SET FOREIGN_KEY_CHECKS = 0")
-//         .execute(connection)
-//         .unwrap();
-// }
-
-// #[cfg(feature = "sqlite")]
-// pub fn disable_foreign_keys(connection: &mut TestConnection) {
-//     diesel::sql_query("PRAGMA defer_foreign_keys = ON")
-//         .execute(connection)
-//         .unwrap();
-// }
 
 pub fn disable_foreign_keys(connection: &mut TestConnection) {
-    diesel::sql_query("PRAGMA defer_foreign_keys = ON")
+    diesel::sql_query("EXEC sp_MSforeachtable \"ALTER TABLE ? NOCHECK CONSTRAINT all\" ")
         .execute(connection)
         .unwrap();
-    todo!("fix disable foreign keys")
 }
 
-// #[cfg(feature = "sqlite")]
-// pub fn drop_table_cascade(connection: &mut TestConnection, table: &str) {
-//     diesel::sql_query(format!("DROP TABLE {table}"))
-//         .execute(connection)
-//         .unwrap();
-// }
-
-// #[cfg(feature = "postgres")]
-// pub fn drop_table_cascade(connection: &mut TestConnection, table: &str) {
-//     diesel::sql_query(format!("DROP TABLE {table} CASCADE"))
-//         .execute(connection)
-//         .unwrap();
-// }
-// TODO: Check if this is needed for MSSQL.
+// TODO: Add cascade for sql server, if any
 
 pub fn drop_table_cascade(connection: &mut TestConnection, table: &str) {
     diesel::sql_query(format!("DROP TABLE {table}"))
@@ -316,11 +248,6 @@ pub fn connection_with_sean_and_tess_in_users_table() -> TestConnection {
 }
 
 pub fn insert_sean_and_tess_into_users_table(connection: &mut TestConnection) {
-    // diesel::sql_query(
-    //     "SET IDENTITY_INSERT users ON;
-    // INSERT INTO users (id, name) VALUES (1, 'Sean'), (2, 'Tess');
-    // SET IDENTITY_INSERT users OFF;",
-    // )
     diesel::sql_query("TRUNCATE TABLE users;INSERT INTO users (name) VALUES ('Sean'), ('Tess')")
         .execute(connection)
         .unwrap();
@@ -369,13 +296,14 @@ pub fn connection_with_nullable_table_data() -> TestConnection {
     connection
 }
 
-fn ensure_primary_key_seq_greater_than(x: i64, connection: &mut TestConnection) {
+fn ensure_primary_key_seq_greater_than(_x: i64, _connection: &mut TestConnection) {
     // if cfg!(feature = "postgres") {
     //     for _ in 0..x {
     //         select(nextval("users_id_seq")).execute(connection).unwrap();
     //     }
     // }
     // TODO: Check if needed....
+    // todo!()
 }
 
 pub fn find_user_by_name(name: &str, connection: &mut TestConnection) -> User {

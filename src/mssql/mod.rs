@@ -5,4 +5,5 @@ pub(crate) mod types;
 
 pub use self::backend::Mssql;
 
+pub use self::connection::BindValue;
 pub use self::connection::MssqlConnection;

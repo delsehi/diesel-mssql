@@ -59,15 +59,6 @@ where
                 "SAVE TRANSACTION diesel_savepoint_{transaction_depth}"
             )),
         };
-        // TODO: Add back instrumentation
-        // conn.instrumentation().on_connection_event(
-        //     super::instrumentation::InstrumentationEvent::BeginTransaction {
-        //         depth: NonZeroU32::new(
-        //             transaction_depth.map_or(0, NonZeroU32::get).wrapping_add(1),
-        //         )
-        //         .expect("Transaction depth is too large"),
-        //     },
-        // );
         diesel::connection::InstrumentationEvent::begin_transaction(
             NonZeroU32::new(transaction_depth.map_or(0, NonZeroU32::get).wrapping_add(1)).unwrap(),
         );
@@ -103,10 +94,6 @@ where
         let depth = transaction_state
             .transaction_depth()
             .expect("We know that we are in a transaction here");
-        // TODO: Add back instrumentation
-        // conn.instrumentation().on_connection_event(
-        //     super::instrumentation::InstrumentationEvent::RollbackTransaction { depth },
-        // );
         diesel::connection::InstrumentationEvent::rollback_transaction(
             NonZeroU32::new(depth.into()).unwrap(),
         );
@@ -180,23 +167,21 @@ where
         let (commit_sql, committing_top_level) = match transaction_depth {
             None => return Err(Error::NotInTransaction),
             Some(transaction_depth) if transaction_depth.get() == 1 => {
-                (Cow::Borrowed("COMMIT"), true)
+                (Cow::Borrowed("COMMIT TRANSACTION"), true)
             }
             Some(transaction_depth) => (
+                // TODO: Investigate why a test fails because of this.
                 Cow::Owned(format!(
-                    "RELEASE SAVEPOINT diesel_savepoint_{}",
+                    "COMMIT diesel_savepoint_{}",
                     transaction_depth.get() - 1
                 )),
                 false,
             ),
+            _ => panic!("Wrong transaction depth?"),
         };
         let depth = transaction_state
             .transaction_depth()
             .expect("We know that we are in a transaction here");
-        // TODO: add back instrumentation
-        // conn.instrumentation().on_connection_event(
-        //     super::instrumentation::InstrumentationEvent::CommitTransaction { depth },
-        // );
         diesel::connection::InstrumentationEvent::commit_transaction(
             NonZeroU32::new(depth.into()).unwrap(),
         );

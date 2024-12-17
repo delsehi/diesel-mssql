@@ -24,56 +24,13 @@ pub enum BindValue<'a> {
     NotSet(tiberius::ColumnType),
 }
 
-impl<'a> BindValue<'a> {
-    pub fn bind_to_query(self, query: &'a mut tiberius::Query<'a>) {
-        match self {
-            BindValue::Integer(val) => {
-                query.bind(*val);
-            }
-            BindValue::Text(val) => {
-                query.bind(val);
-            }
-            BindValue::Date(val) => {
-                query.bind(*val);
-            }
-
-            BindValue::Bool(val) => query.bind(*val),
-            BindValue::NotSet(_) => todo!(),
-            BindValue::Bigint(val) => {
-                query.bind(*val);
-            }
-            BindValue::Binary(val) => {
-                query.bind(val);
-            }
-            // BindValue::Double() => {
-            //     query.bind(*val);
-            // },
-            BindValue::Decimal(val) => {
-                query.bind(*val);
-            }
-            BindValue::Float(val) => {
-                query.bind(*val);
-            }
-            BindValue::SmallInt(val) => {
-                query.bind(*val);
-            }
-            BindValue::Time(val) => {
-                query.bind(*val);
-            }
-            BindValue::Timestamp(val) => {
-                query.bind(*val);
-            }
-        }
-    }
-}
-
-impl<'a> Default for MssqlBindCollector<'a> {
+impl Default for MssqlBindCollector<'_> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<'a> MssqlBindCollector<'a> {
+impl MssqlBindCollector<'_> {
     pub fn new() -> Self {
         Self { binds: vec![] }
     }

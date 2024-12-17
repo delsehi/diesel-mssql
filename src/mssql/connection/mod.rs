@@ -13,7 +13,7 @@ use diesel::{
     },
     migration::MigrationConnection,
     query_builder::{QueryBuilder, QueryFragment, QueryId},
-    Connection, QueryResult, RunQueryDsl,
+    Connection, QueryResult,
 };
 use tiberius::{Client, Query};
 use tokio::{net::TcpStream, runtime::Runtime};
@@ -124,56 +124,13 @@ impl Connection for MssqlConnection {
         T: QueryFragment<Self::Backend> + QueryId,
     {
         let mut bc = MssqlBindCollector::new();
-        source.collect_binds(&mut bc, &mut (), &Mssql).unwrap();
+        source.collect_binds(&mut bc, &mut (), &Mssql)?;
         let mut query_builder = MssqlQueryBuilder::new();
         source.to_sql(&mut query_builder, &Mssql).unwrap();
         let sql = query_builder.finish();
         let my_sql = sql.clone();
         let mut query = Query::new(sql);
-        for b in bc.binds.into_iter() {
-            // b.bind_to_query(&mut query);
-            match b {
-                BindValue::Integer(val) => {
-                    query.bind(*val);
-                }
-                BindValue::Text(val) => {
-                    query.bind(val);
-                }
-                BindValue::Date(val) => {
-                    query.bind(*val);
-                }
-
-                BindValue::Bool(val) => query.bind(*val),
-                BindValue::NotSet(_) => todo!(),
-                BindValue::Bigint(val) => {
-                    query.bind(*val);
-                }
-                BindValue::Binary(val) => {
-                    query.bind(val);
-                }
-                // BindValue::Double() => {
-                //     query.bind(*val);
-                // },
-                BindValue::Decimal(val) => {
-                    query.bind(*val);
-                }
-                BindValue::Float(val) => {
-                    query.bind(*val);
-                }
-                BindValue::SmallInt(val) => {
-                    query.bind(*val);
-                }
-                BindValue::Time(val) => {
-                    query.bind(*val);
-                }
-                BindValue::Timestamp(val) => {
-                    query.bind(*val);
-                }
-            }
-        }
-        // bc.binds.into_iter().for_each(|b| {
-        //     b.bind_to_query(&mut query);
-        // });
+        bind_values_to_query(bc.binds, &mut query);
         let result = self
             .rt
             .block_on(query.execute(&mut self.client))
@@ -195,72 +152,59 @@ impl Connection for MssqlConnection {
     fn set_instrumentation(&mut self, instrumentation: impl diesel::connection::Instrumentation) {
         self.instrumentation = Some(Box::new(instrumentation));
     }
+
+    fn set_prepared_statement_cache_size(&mut self, size: diesel::connection::CacheSize) {
+        todo!()
+    }
 }
 
 pub const CREATE_MIGRATIONS_TABLE: &str = include_str!("setup_migration_table.sql");
 impl MigrationConnection for MssqlConnection {
     fn setup(&mut self) -> QueryResult<usize> {
+        use diesel::RunQueryDsl;
         diesel::sql_query(CREATE_MIGRATIONS_TABLE).execute(self)
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use diesel::RunQueryDsl;
-    // extern crate dotenvy;
-    use dotenvy;
+ fn bind_values_to_query<'a>(bind_values: Vec<BindValue<'a>>, query: &mut Query<'a>) {
+    for bind_val in bind_values.into_iter() {
+        match bind_val {
+            BindValue::Integer(val) => {
+                query.bind(*val);
+            }
+            BindValue::Text(val) => {
+                query.bind(val);
+            }
+            BindValue::Date(val) => {
+                query.bind(*val);
+            }
 
-    #[test]
-    fn can_establish_connection() -> Result<(), diesel::ConnectionError> {
-        dotenvy::dotenv().expect("Can get ");
-        let conn_str = std::env::var("CONNECTION_STRING").unwrap();
-        MssqlConnection::establish(&conn_str)?;
-        Ok(())
-    }
-
-    #[test]
-    fn can_execute() {
-        dotenvy::dotenv().expect("");
-        let conn_str = std::env::var("CONNECTION_STRING").unwrap();
-        let mut c = MssqlConnection::establish(&conn_str).unwrap();
-        c.batch_execute("DROP TABLE IF EXISTS delfi").ok();
-        c.batch_execute("CREATE TABLE delfi (id INT, name VARCHAR(50))")
-            .ok();
-        let affected_rows =
-            diesel::sql_query("insert into delfi (id, name) values (1, 'delfi'), (2, 'georg')")
-                .execute(&mut c)
-                .unwrap();
-        c.batch_execute("DROP TABLE IF EXISTS delfi").ok();
-        assert_eq!(2, affected_rows);
-    }
-
-    #[test]
-    fn simple_connection() {
-        dotenvy::dotenv().expect("");
-        let conn_str = std::env::var("CONNECTION_STRING").unwrap();
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .expect("Whopsie");
-        // let inner = rt.block_on(future)
-        let config = tiberius::Config::from_ado_string(&conn_str).unwrap();
-        let tcp = rt
-            .block_on(tokio::net::TcpStream::connect(config.get_addr()))
-            .expect("msg");
-        tcp.set_nodelay(true).expect("noo");
-        let client = rt
-            .block_on(Client::connect(config, tcp.compat_write()))
-            .unwrap();
-        let transaction_state = MssqlTransactionManager {
-            ..Default::default()
-        };
-        let mut conn = MssqlConnection {
-            client,
-            rt,
-            instrumentation: None,
-            transaction_state,
-        };
-        conn.batch_execute("SELECT 1").unwrap();
+            BindValue::Bool(val) => query.bind(*val),
+            BindValue::NotSet(_) => {
+                // TODO! Find a more correct way of binding null. 
+                query.bind(None as Option<&[u8]>);
+            }
+            BindValue::Bigint(val) => {
+                query.bind(*val);
+            }
+            BindValue::Binary(val) => {
+                query.bind(val);
+            }
+            BindValue::Decimal(val) => {
+                query.bind(*val);
+            }
+            BindValue::Float(val) => {
+                query.bind(*val);
+            }
+            BindValue::SmallInt(val) => {
+                query.bind(*val);
+            }
+            BindValue::Time(val) => {
+                query.bind(*val);
+            }
+            BindValue::Timestamp(val) => {
+                query.bind(*val);
+            }
+        }
     }
 }

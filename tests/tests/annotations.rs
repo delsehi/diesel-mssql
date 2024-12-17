@@ -1,35 +1,36 @@
 use super::schema::*;
+use diesel::dsl::insert_into;
 use diesel::sql_types::Text;
-use diesel::*;
+use diesel::prelude::*;  
 
-// #[test]
-// fn association_where_struct_name_doesnt_match_table_name() {
-//     #[derive(PartialEq, Eq, Debug, Clone, Queryable, Identifiable, Associations)]
-//     #[diesel(belongs_to(Post))]
-//     #[diesel(table_name = comments)]
-//     struct OtherComment {
-//         id: i32,
-//         post_id: i32,
-//     }
+#[test]
+fn association_where_struct_name_doesnt_match_table_name() {
+    #[derive(PartialEq, Eq, Debug, Clone, Queryable, Identifiable, Associations)]
+    #[diesel(belongs_to(Post))]
+    #[diesel(table_name = comments)]
+    struct OtherComment {
+        id: i32,
+        post_id: i32,
+    }
 
-//     let connection = &mut connection_with_sean_and_tess_in_users_table();
+    let connection = &mut connection_with_sean_and_tess_in_users_table();
 
-//     let sean = find_user_by_name("Sean", connection);
-//     insert_into(posts::table)
-//         .values(&sean.new_post("Hello", None))
-//         .execute(connection)
-//         .unwrap();
-//     let post = posts::table.first::<Post>(connection).unwrap();
-//     insert_into(comments::table)
-//         .values(&NewComment(post.id, "comment"))
-//         .execute(connection)
-//         .unwrap();
+    let sean = find_user_by_name("Sean", connection);
+    insert_into(posts::table)
+        .values(&sean.new_post("Hello", None))
+        .execute(connection)
+        .unwrap();
+    let post = posts::table.first::<Post>(connection).unwrap();
+    insert_into(comments::table)
+        .values(&NewComment(post.id, "comment"))
+        .execute(connection)
+        .unwrap();
 
-//     let comment_text = OtherComment::belonging_to(&post)
-//         .select(comments::text)
-//         .first::<String>(connection);
-//     assert_eq!(Ok("comment".into()), comment_text);
-// }
+    let comment_text = OtherComment::belonging_to(&post)
+        .select(comments::text)
+        .first::<String>(connection);
+    assert_eq!(Ok("comment".into()), comment_text);
+}
 
 // #[test]
 // #[cfg(not(any(feature = "sqlite", feature = "mysql")))]
@@ -104,6 +105,8 @@ use diesel::*;
 mod associations_can_have_nullable_foreign_keys {
     #![allow(dead_code)]
 
+    use diesel::{table, Associations, Identifiable};
+
     table! {
         foos{
             id -> Integer,
@@ -133,6 +136,8 @@ mod associations_can_have_nullable_foreign_keys {
 // This module has no test functions, as it's only to test compilation.
 mod multiple_lifetimes_in_insertable_struct_definition {
     #![allow(dead_code)]
+    use diesel::Insertable;
+
     use crate::schema::posts;
 
     #[derive(Insertable)]
@@ -145,6 +150,8 @@ mod multiple_lifetimes_in_insertable_struct_definition {
 
 mod lifetimes_with_names_other_than_a {
     #![allow(dead_code)]
+    use diesel::Insertable;
+
     use crate::schema::posts;
 
     #[derive(Insertable)]
@@ -158,6 +165,8 @@ mod lifetimes_with_names_other_than_a {
 
 mod insertable_with_cow {
     #![allow(dead_code)]
+    use diesel::Insertable;
+
     use crate::schema::posts;
     use std::borrow::Cow;
 
@@ -173,6 +182,8 @@ mod insertable_with_cow {
 mod custom_foreign_keys_are_respected_on_belongs_to {
     #![allow(dead_code)]
 
+    use diesel::{table, Associations, Identifiable};
+
     use crate::schema::User;
 
     table! { special_posts { id -> Integer, author_id -> Integer, } }
@@ -187,6 +198,8 @@ mod custom_foreign_keys_are_respected_on_belongs_to {
 
 mod derive_identifiable_with_lifetime {
     #![allow(dead_code)]
+    use diesel::Identifiable;
+
     use crate::schema::posts;
 
     #[derive(Identifiable)]
@@ -256,35 +269,35 @@ fn derive_identifiable_with_composite_pk() {
     assert_eq!((&6, &7), foo2.id());
 }
 
-// #[test]
-// fn derive_insertable_with_option_for_not_null_field_with_default() {
-//     #[derive(Insertable)]
-//     #[diesel(table_name = users)]
-//     struct NewUser {
-//         id: Option<i32>,
-//         name: &'static str,
-//     }
+#[test]
+fn derive_insertable_with_option_for_not_null_field_with_default() {
+    #[derive(Insertable)]
+    #[diesel(table_name = users)]
+    struct NewUser {
+        id: Option<i32>,
+        name: &'static str,
+    }
 
-//     let conn = &mut connection();
-//     let data = vec![
-//         NewUser {
-//             id: None,
-//             name: "Jim",
-//         },
-//         NewUser {
-//             id: Some(123),
-//             name: "Bob",
-//         },
-//     ];
-//     assert_eq!(Ok(2), insert_into(users::table).values(&data).execute(conn));
+    let conn = &mut connection();
+    let data = vec![
+        NewUser {
+            id: None,
+            name: "Jim",
+        },
+        NewUser {
+            id: Some(123),
+            name: "Bob",
+        },
+    ];
+    assert_eq!(Ok(2), insert_into(users::table).values(&data).execute(conn));
 
-//     let users = users::table.load::<User>(conn).unwrap();
-//     let jim = users.iter().find(|u| u.name == "Jim");
-//     let bob = users.iter().find(|u| u.name == "Bob");
+    let users = users::table.load::<User>(conn).unwrap();
+    let jim = users.iter().find(|u| u.name == "Jim");
+    let bob = users.iter().find(|u| u.name == "Bob");
 
-//     assert!(jim.is_some());
-//     assert_eq!(Some(&User::new(123, "Bob")), bob);
-// }
+    assert!(jim.is_some());
+    assert_eq!(Some(&User::new(123, "Bob")), bob);
+}
 
 define_sql_function!(fn nextval(a: Text) -> Integer);
 
@@ -311,24 +324,24 @@ define_sql_function!(fn nextval(a: Text) -> Integer);
 //     assert!(jim.is_some());
 // }
 
-// #[test]
-// fn nested_queryable_derives() {
-//     #[derive(Queryable, Debug, PartialEq)]
-//     struct UserAndPost {
-//         user: User,
-//         post: Post,
-//     }
+#[test]
+fn nested_queryable_derives() {
+    #[derive(Queryable, Debug, PartialEq)]
+    struct UserAndPost {
+        user: User,
+        post: Post,
+    }
 
-//     let conn = &mut connection_with_sean_and_tess_in_users_table();
-//     let sean = find_user_by_name("Sean", conn);
-//     insert_into(posts::table)
-//         .values(&sean.new_post("Hi", None))
-//         .execute(conn)
-//         .unwrap();
-//     let post = posts::table.first(conn).unwrap();
+    let conn = &mut connection_with_sean_and_tess_in_users_table();
+    let sean = find_user_by_name("Sean", conn);
+    insert_into(posts::table)
+        .values(&sean.new_post("Hi", None))
+        .execute(conn)
+        .unwrap();
+    let post = posts::table.first(conn).unwrap();
 
-//     let expected = UserAndPost { user: sean, post };
-//     let actual = users::table.inner_join(posts::table).get_result(conn);
+    let expected = UserAndPost { user: sean, post };
+    let actual = users::table.inner_join(posts::table).get_result(conn);
 
-//     assert_eq!(Ok(expected), actual);
-// }
+    assert_eq!(Ok(expected), actual);
+}

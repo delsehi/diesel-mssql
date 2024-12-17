@@ -22,9 +22,10 @@ impl FromSql<Date, Mssql> for NaiveDate {
                 return Ok(dt.unwrap());
             }
         };
+        // TODO: Better error handling
         diesel::deserialize::Result::Err(Box::new(std::io::Error::new(
             std::io::ErrorKind::Other,
-            "Noo",
+            "Could not deserialize date",
         )))
     }
 }

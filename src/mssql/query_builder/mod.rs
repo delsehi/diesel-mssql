@@ -1,10 +1,8 @@
 mod limit_offset;
-use super::backend::MssqlSelectSyntax;
-use diesel::query_builder::QueryBuilder;
-use diesel::query_builder::QueryFragment;
-use diesel::query_builder::SelectStatement;
-
+mod select;
+mod concat;
 use super::backend::Mssql;
+use diesel::query_builder::QueryBuilder;
 
 pub struct MssqlQueryBuilder {
     query: String,
@@ -49,32 +47,3 @@ impl QueryBuilder<Mssql> for MssqlQueryBuilder {
     }
 }
 
-impl<F, S, D, W, O, LOf, G, H, LC> QueryFragment<Mssql, MssqlSelectSyntax>
-    for SelectStatement<F, S, D, W, O, LOf, G, H, LC>
-where
-    F: QueryFragment<Mssql>,
-    S: QueryFragment<Mssql>,
-    D: QueryFragment<Mssql>,
-    W: QueryFragment<Mssql>,
-    O: QueryFragment<Mssql>,
-    LOf: QueryFragment<Mssql>,
-    G: QueryFragment<Mssql>,
-    H: QueryFragment<Mssql>,
-    LC: QueryFragment<Mssql>,
-{
-    fn walk_ast<'b>(
-        &'b self,
-        mut out: diesel::query_builder::AstPass<'_, 'b, Mssql>,
-    ) -> diesel::QueryResult<()> {
-        out.push_sql("SELECT ");
-        self.distinct.walk_ast(out.reborrow())?;
-        self.limit_offset.walk_ast(out.reborrow())?;
-        self.select.walk_ast(out.reborrow())?;
-        self.from.walk_ast(out.reborrow())?;
-        self.where_clause.walk_ast(out.reborrow())?;
-        self.group_by.walk_ast(out.reborrow())?;
-        self.having.walk_ast(out.reborrow())?;
-        self.order.walk_ast(out.reborrow())?;
-        Ok(())
-    }
-}

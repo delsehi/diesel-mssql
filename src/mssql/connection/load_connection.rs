@@ -1,6 +1,6 @@
+use super::bind_values_to_query;
 use super::cursor::Cursor;
 use super::row::MssqlRow;
-use super::BindValue;
 use super::Mssql;
 use super::MssqlBindCollector;
 use super::MssqlConnection;
@@ -28,52 +28,8 @@ impl LoadConnection<DefaultLoadingMode> for MssqlConnection {
         let sql = query_builder.finish();
         let debug_sql = sql.clone();
         let mut query = tiberius::Query::new(sql);
-        // TODO: Make this a function
-        for b in bc.binds.into_iter() {
-            // b.bind_to_query(&mut query);
-            match b {
-                BindValue::Integer(val) => {
-                    query.bind(*val);
-                }
-                BindValue::Text(val) => {
-                    query.bind(val);
-                }
-                BindValue::Date(val) => {
-                    query.bind(*val);
-                }
-
-                BindValue::Bool(val) => query.bind(*val),
-                BindValue::NotSet(_) => todo!(),
-                BindValue::Bigint(val) => {
-                    query.bind(*val);
-                }
-                BindValue::Binary(val) => {
-                    query.bind(val);
-                }
-                // BindValue::Double() => {
-                //     query.bind(*val);
-                // },
-                BindValue::Decimal(val) => {
-                    query.bind(*val);
-                }
-                BindValue::Float(val) => {
-                    query.bind(*val);
-                }
-                BindValue::SmallInt(val) => {
-                    query.bind(*val);
-                }
-                BindValue::Time(val) => {
-                    query.bind(*val);
-                }
-                BindValue::Timestamp(val) => {
-                    query.bind(*val);
-                }
-            }
-        }
-        let query_stream = self
-            .rt
-            .block_on(query.query(&mut self.client))
-            .expect(&debug_sql);
+        bind_values_to_query(bc.binds, &mut query);
+        let query_stream = self.rt.block_on(query.query(&mut self.client)).expect(&debug_sql);
         let rows = self.rt.block_on(query_stream.into_first_result()).unwrap();
         let vecdeque = std::collections::VecDeque::from(rows);
         Ok(Cursor::new(vecdeque))

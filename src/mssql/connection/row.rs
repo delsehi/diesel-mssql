@@ -5,7 +5,15 @@ use tiberius::{Column, ColumnData};
 
 pub struct MssqlField<'a> {
     column_info: Option<&'a Column>,
-    field_value: ColumnData<'a>,
+    field_value: &'a ColumnData<'a>,
+}
+
+struct FromSqlHelper<'a>(&'a ColumnData<'static>);
+
+impl<'a> tiberius::FromSql<'a> for FromSqlHelper<'a> {
+    fn from_sql(value: &'a ColumnData<'static>) -> Result<Option<Self>, tiberius::error::Error> {
+        Ok(Some(Self(value)))
+    }
 }
 
 impl<'a> Field<'a, Mssql> for MssqlField<'a> {
@@ -17,6 +25,16 @@ impl<'a> Field<'a, Mssql> for MssqlField<'a> {
     }
 
     fn value(&self) -> Option<<Mssql as diesel::backend::Backend>::RawValue<'_>> {
+        if let ColumnData::I32(value) = &self.field_value {
+            if value.is_none() {
+                return None;
+            }
+        }
+        if let ColumnData::String(value) = &self.field_value {
+            if value.is_none() {
+                return None;
+            }
+        }
         Some(self.field_value.clone())
     }
 }
@@ -48,7 +66,11 @@ impl<'a> RowIndex<&'a str> for MssqlRow {
 }
 
 impl<'a> diesel::row::Row<'a, Mssql> for MssqlRow {
-    type Field<'f> = MssqlField<'f> where 'a: 'f, Self: 'f;
+    type Field<'f>
+        = MssqlField<'f>
+    where
+        'a: 'f,
+        Self: 'f;
 
     type InnerPartialRow = Self;
 
@@ -64,14 +86,13 @@ impl<'a> diesel::row::Row<'a, Mssql> for MssqlRow {
         let idx = self.idx(idx).unwrap();
         let row = &self.inner_row;
         let col = row.columns().get(idx);
-        let cell = row.cells().nth(idx);
-        if let Some((_, value)) = cell {
-            Some(MssqlField {
-                column_info: col,
-                field_value: value.clone(),
-            })
-        } else {
-            None
+        let cell = row.try_get::<FromSqlHelper, _>(idx);
+        match cell {
+            Ok(value) => value.map(|value| MssqlField {
+                        column_info: col,
+                        field_value: value.0,
+                    }),
+            Err(_) => None,
         }
     }
 

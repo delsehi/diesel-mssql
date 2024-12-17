@@ -1,10 +1,21 @@
 mod alias;
-// mod annotations;
+mod annotations;
+mod associations;
+mod boxed_queries;
 mod delete;
 mod distinct;
 mod joins;
 mod schema;
-// mod transactions;
+mod transactions;
 mod update;
-
-mod associations;
+// mod combination;
+// mod deserialization;
+mod filter;
+mod filter_operator;
+mod find;
+mod group_by;
+mod limit_offset;
+mod order;
+mod schema_dsl;
+mod select;
+// // mod custom_types;

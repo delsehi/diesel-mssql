@@ -1,5 +1,5 @@
 use super::super::backend::Mssql;
-use diesel::query_builder::*;
+use diesel::{query_builder::*, QueryResult};
 
 impl QueryFragment<Mssql> for LimitOffsetClause<NoLimitClause, NoOffsetClause> {
     fn walk_ast<'b>(&'b self, _out: AstPass<'_, 'b, Mssql>) -> diesel::QueryResult<()> {
@@ -16,10 +16,11 @@ where
         &'b self,
         mut out: diesel::query_builder::AstPass<'_, 'b, Mssql>,
     ) -> diesel::QueryResult<()> {
-        out.push_sql(" TOP ");
+        out.push_sql(" OFFSET ");
+        self.offset_clause.0.walk_ast(out.reborrow())?;
+        out.push_sql(" ROWS FETCH NEXT ");
         self.limit_clause.0.walk_ast(out.reborrow())?;
-
-        self.offset_clause.walk_ast(out.reborrow())?;
+        out.push_sql(" ROWS ONLY ");
         Ok(())
     }
 }
@@ -36,5 +37,79 @@ where
         self.limit_clause.0.walk_ast(out.reborrow())?;
         out.push_sql(") ");
         Ok(())
+    }
+}
+
+impl QueryFragment<Mssql> for BoxedLimitOffsetClause<'_, Mssql> {
+    fn walk_ast<'b>(&'b self, mut out: AstPass<'_, 'b, Mssql>) -> QueryResult<()> {
+        match (self.limit.as_ref(), self.offset.as_ref()) {
+            (Some(limit), Some(offset)) => {
+                limit.walk_ast(out.reborrow())?;
+                offset.walk_ast(out.reborrow())?;
+            }
+            (Some(limit), None) => {
+                limit.walk_ast(out.reborrow())?;
+            }
+            (None, Some(offset)) => {
+                out.push_sql(" LIMIT 100000 ");
+                offset.walk_ast(out.reborrow())?;
+            }
+            (None, None) => {}
+        }
+        Ok(())
+    }
+}
+
+impl<'a> IntoBoxedClause<'a, Mssql> for LimitOffsetClause<NoLimitClause, NoOffsetClause> {
+    type BoxedClause = BoxedLimitOffsetClause<'a, Mssql>;
+
+    fn into_boxed(self) -> Self::BoxedClause {
+        BoxedLimitOffsetClause {
+            limit: None,
+            offset: None,
+        }
+    }
+}
+
+impl<'a, L> IntoBoxedClause<'a, Mssql> for LimitOffsetClause<LimitClause<L>, NoOffsetClause>
+where
+    L: QueryFragment<Mssql> + Send + 'a,
+{
+    type BoxedClause = BoxedLimitOffsetClause<'a, Mssql>;
+
+    fn into_boxed(self) -> Self::BoxedClause {
+        BoxedLimitOffsetClause {
+            limit: Some(Box::new(self.limit_clause.0)),
+            offset: None,
+        }
+    }
+}
+
+impl<'a, O> IntoBoxedClause<'a, Mssql> for LimitOffsetClause<NoLimitClause, OffsetClause<O>>
+where
+    O: QueryFragment<Mssql> + Send + 'a,
+{
+    type BoxedClause = BoxedLimitOffsetClause<'a, Mssql>;
+
+    fn into_boxed(self) -> Self::BoxedClause {
+        BoxedLimitOffsetClause {
+            limit: None,
+            offset: Some(Box::new(self.offset_clause.0)),
+        }
+    }
+}
+
+impl<'a, L, O> IntoBoxedClause<'a, Mssql> for LimitOffsetClause<LimitClause<L>, OffsetClause<O>>
+where
+    L: QueryFragment<Mssql> + Send + 'a,
+    O: QueryFragment<Mssql> + Send + 'a,
+{
+    type BoxedClause = BoxedLimitOffsetClause<'a, Mssql>;
+
+    fn into_boxed(self) -> Self::BoxedClause {
+        BoxedLimitOffsetClause {
+            limit: Some(Box::new(self.limit_clause.0)),
+            offset: Some(Box::new(self.offset_clause.0)),
+        }
     }
 }

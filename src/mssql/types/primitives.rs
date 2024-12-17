@@ -111,11 +111,6 @@ impl FromSql<sql_types::Text, Mssql> for String {
         if let ColumnData::String(Some(val)) = bytes {
             return Ok(val.to_string());
         };
-        if let ColumnData::String(None) = bytes {
-            // TODO: Why can this be empty?
-            // Strange error. Nullable strings will still try to become a value.
-            return Ok("".to_string());
-        }
         diesel::deserialize::Result::Err(SERIALIZE_ERROR_MSG.into())
     }
 }

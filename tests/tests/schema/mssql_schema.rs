@@ -1,20 +1,3 @@
-// table! {
-//     all_the_ranges (int4) {
-//         int4 -> Int4range,
-//         int8 -> Int8range,
-//         num -> Numrange,
-//         ts -> Tsrange,
-//         tstz -> Tstzrange,
-//         date -> Daterange,
-//         int4multi -> Int4multirange,
-//         int8multi -> Int8multirange,
-//         nummulti -> Nummultirange,
-//         tsmulti -> Tsmultirange,
-//         tstzmulti -> Tstzmultirange,
-//         datemulti -> Datemultirange,
-//     }
-// }
-
 table! {
     comments (id) {
         id -> Int4,

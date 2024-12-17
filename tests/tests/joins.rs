@@ -87,32 +87,32 @@ fn select_multiple_from_join() {
     assert_eq!(expected_data, actual_data);
 }
 
-// #[test]
-// fn join_boxed_query() {
-//     let connection = &mut connection_with_sean_and_tess_in_users_table();
+#[test]
+fn join_boxed_query() {
+    let connection = &mut connection_with_sean_and_tess_in_users_table();
 
-//     diesel::sql_query(
-//         "INSERT INTO posts (id, user_id, title) VALUES
-//         (1, 1, 'Hello'),
-//         (2, 2, 'World')
-//     ",
-//     )
-//     .execute(connection)
-//     .unwrap();
+    diesel::sql_query(
+        "INSERT INTO posts (id, user_id, title) VALUES
+        (1, 1, 'Hello'),
+        (2, 2, 'World')
+    ",
+    )
+    .execute(connection)
+    .unwrap();
 
-//     let source = posts::table
-//         .into_boxed()
-//         .inner_join(users::table)
-//         .select((users::name, posts::title));
+    let source = posts::table
+        .into_boxed()
+        .inner_join(users::table)
+        .select((users::name, posts::title));
 
-//     let expected_data = vec![
-//         ("Sean".to_string(), "Hello".to_string()),
-//         ("Tess".to_string(), "World".to_string()),
-//     ];
-//     let actual_data: Vec<_> = source.order(users::name).load(connection).unwrap();
+    let expected_data = vec![
+        ("Sean".to_string(), "Hello".to_string()),
+        ("Tess".to_string(), "World".to_string()),
+    ];
+    let actual_data: Vec<_> = source.order(users::name).load(connection).unwrap();
 
-//     assert_eq!(expected_data, actual_data);
-// }
+    assert_eq!(expected_data, actual_data);
+}
 
 #[test]
 fn select_only_one_side_of_join() {
@@ -365,30 +365,30 @@ fn select_then_join() {
 use diesel::sql_types::Text;
 define_sql_function!(fn lower(x: Text) -> Text);
 
-// #[test]
-// fn selecting_complex_expression_from_right_side_of_left_join() {
-//     let connection = &mut connection_with_sean_and_tess_in_users_table();
-//     let new_posts = vec![
-//         NewPost::new(1, "Post One", None),
-//         NewPost::new(1, "Post Two", None),
-//     ];
-//     insert_into(posts::table)
-//         .values(&new_posts)
-//         .execute(connection)
-//         .unwrap();
+#[test]
+fn selecting_complex_expression_from_right_side_of_left_join() {
+    let connection = &mut connection_with_sean_and_tess_in_users_table();
+    let new_posts = vec![
+        NewPost::new(1, "Post One", None),
+        NewPost::new(1, "Post Two", None),
+    ];
+    insert_into(posts::table)
+        .values(&new_posts)
+        .execute(connection)
+        .unwrap();
 
-//     let titles = users::table
-//         .left_outer_join(posts::table)
-//         .select(lower(posts::title).nullable())
-//         .order((users::id, posts::id))
-//         .load(connection);
-//     let expected_data = vec![
-//         Some("post one".to_string()),
-//         Some("post two".to_string()),
-//         None,
-//     ];
-//     assert_eq!(Ok(expected_data), titles);
-// }
+    let titles = users::table
+        .left_outer_join(posts::table)
+        .select(lower(posts::title).nullable())
+        .order((users::id, posts::id))
+        .load(connection);
+    let expected_data = vec![
+        Some("post one".to_string()),
+        Some("post two".to_string()),
+        None,
+    ];
+    assert_eq!(Ok(expected_data), titles);
+}
 
 #[test]
 fn selecting_complex_expression_from_both_sides_of_outer_join() {
@@ -420,40 +420,40 @@ fn selecting_complex_expression_from_both_sides_of_outer_join() {
     assert_eq!(Ok(expected_data), titles);
 }
 
-// #[test]
-// fn join_with_explicit_on_clause() {
-//     let connection = &mut connection_with_sean_and_tess_in_users_table();
-//     let new_posts = vec![
-//         NewPost::new(1, "Post One", None),
-//         NewPost::new(1, "Post Two", None),
-//     ];
-//     insert_into(posts::table)
-//         .values(&new_posts)
-//         .execute(connection)
-//         .unwrap();
+#[test]
+fn join_with_explicit_on_clause() {
+    let connection = &mut connection_with_sean_and_tess_in_users_table();
+    let new_posts = vec![
+        NewPost::new(1, "Post One", None),
+        NewPost::new(1, "Post Two", None),
+    ];
+    insert_into(posts::table)
+        .values(&new_posts)
+        .execute(connection)
+        .unwrap();
 
-//     let sean = find_user_by_name("Sean", connection);
-//     let tess = find_user_by_name("Tess", connection);
-//     let post_one = posts::table
-//         .filter(posts::title.eq("Post One"))
-//         .first::<Post>(connection)
-//         .unwrap();
-//     let expected_data = Ok(vec![(sean, post_one.clone()), (tess, post_one)]);
+    let sean = find_user_by_name("Sean", connection);
+    let tess = find_user_by_name("Tess", connection);
+    let post_one = posts::table
+        .filter(posts::title.eq("Post One"))
+        .first::<Post>(connection)
+        .unwrap();
+    let expected_data = Ok(vec![(sean, post_one.clone()), (tess, post_one)]);
 
-//     let data = users::table
-//         .inner_join(posts::table.on(posts::title.eq("Post One")))
-//         .order(users::id)
-//         .load(connection);
+    let data = users::table
+        .inner_join(posts::table.on(posts::title.eq("Post One")))
+        .order(users::id)
+        .load(connection);
 
-//     assert_eq!(expected_data, data);
+    assert_eq!(expected_data, data);
 
-//     let data = users::table
-//         .inner_join(posts::table.on(posts::title.eq_any(vec!["Post One"])))
-//         .order(users::id)
-//         .load(connection);
+    let data = users::table
+        .inner_join(posts::table.on(posts::title.eq_any(vec!["Post One"])))
+        .order(users::id)
+        .load(connection);
 
-//     assert_eq!(expected_data, data);
-// }
+    assert_eq!(expected_data, data);
+}
 
 #[test]
 fn selecting_parent_child_grandchild() {

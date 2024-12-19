@@ -265,13 +265,23 @@ where
     ) -> diesel::QueryResult<()> {
         out.push_sql("SELECT ");
         self.distinct.walk_ast(out.reborrow())?;
-        self.limit_offset.walk_ast(out.reborrow())?;
         self.select.walk_ast(out.reborrow())?;
         self.from.walk_ast(out.reborrow())?;
         self.where_clause.walk_ast(out.reborrow())?;
         self.group_by.walk_ast(out.reborrow())?;
         self.having.walk_ast(out.reborrow())?;
-        self.order.walk_ast(out.reborrow())?;
+        match self.order {
+            Some(ref order) => order.walk_ast(out.reborrow())?,
+            // if we have no order clause but a limit/offset clause
+            // we need to generate a fake order statement
+            None if self.limit_offset.limit.is_some() || self.limit_offset.offset.is_some() => {
+                // we don't have any reasonable thing to order by
+                // so we just order by the first column in the select clause
+                out.push_sql(" ORDER BY 0 ");
+            }
+            None => {}
+        }
+        self.limit_offset.walk_ast(out.reborrow())?;
         Ok(())
     }
 }

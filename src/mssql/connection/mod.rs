@@ -153,7 +153,7 @@ impl Connection for MssqlConnection {
         self.instrumentation = Some(Box::new(instrumentation));
     }
 
-    fn set_prepared_statement_cache_size(&mut self, size: diesel::connection::CacheSize) {
+    fn set_prepared_statement_cache_size(&mut self, _size: diesel::connection::CacheSize) {
         todo!()
     }
 }
@@ -166,7 +166,7 @@ impl MigrationConnection for MssqlConnection {
     }
 }
 
- fn bind_values_to_query<'a>(bind_values: Vec<BindValue<'a>>, query: &mut Query<'a>) {
+fn bind_values_to_query<'a>(bind_values: Vec<BindValue<'a>>, query: &mut Query<'a>) {
     for bind_val in bind_values.into_iter() {
         match bind_val {
             BindValue::Integer(val) => {
@@ -181,7 +181,7 @@ impl MigrationConnection for MssqlConnection {
 
             BindValue::Bool(val) => query.bind(*val),
             BindValue::NotSet(_) => {
-                // TODO! Find a more correct way of binding null. 
+                // TODO! Find a more correct way of binding null.
                 query.bind(None as Option<&[u8]>);
             }
             BindValue::Bigint(val) => {

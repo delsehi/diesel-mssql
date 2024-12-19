@@ -44,14 +44,19 @@ impl QueryFragment<Mssql> for BoxedLimitOffsetClause<'_, Mssql> {
     fn walk_ast<'b>(&'b self, mut out: AstPass<'_, 'b, Mssql>) -> QueryResult<()> {
         match (self.limit.as_ref(), self.offset.as_ref()) {
             (Some(limit), Some(offset)) => {
-                limit.walk_ast(out.reborrow())?;
+                out.push_sql(" OFFSET ");
                 offset.walk_ast(out.reborrow())?;
+                out.push_sql(" ROW FETCH NEXT ");
+                limit.walk_ast(out.reborrow())?;
+                out.push_sql(" ROWS ONLY ");
             }
             (Some(limit), None) => {
+                out.push_sql(" OFFSET 0 ROW FETCH NEXT ");
                 limit.walk_ast(out.reborrow())?;
+                out.push_sql(" ROWS ONLY ");
             }
             (None, Some(offset)) => {
-                out.push_sql(" LIMIT 100000 ");
+                out.push_sql(" OFFSET ");
                 offset.walk_ast(out.reborrow())?;
             }
             (None, None) => {}

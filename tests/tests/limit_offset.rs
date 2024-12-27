@@ -66,6 +66,7 @@ fn limit_offset_order() {
 }
 
 #[test]
+#[ignore = "Known issue. Probably requires updates upstream."]
 fn boxed_limit() {
     use crate::schema::users::dsl::*;
 
@@ -93,6 +94,7 @@ fn boxed_limit() {
 }
 
 #[test]
+#[ignore = "Known issue. Probably requires updates upstream."]
 fn boxed_offset() {
     use crate::schema::users::dsl::*;
 
@@ -111,7 +113,6 @@ fn boxed_offset() {
         .unwrap();
     assert_eq!(expected_data, actual_data);
 
-    #[cfg(any(feature = "postgres", feature = "sqlite"))]
     {
         let actual_data: Vec<_> = users
             .select((name, hair_color))

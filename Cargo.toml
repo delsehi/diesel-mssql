@@ -9,9 +9,10 @@ edition = "2021"
 
 [dependencies]
 chrono = { version = "0.4.38", optional = true }
-diesel = { version = "2.2.4", default-features = false, features = [
+diesel = { git = "https://github.com/diesel-rs/diesel", branch = "master", default-features = false, features = [
     "i-implement-a-third-party-backend-and-opt-into-breaking-changes",
 ] }
+
 tiberius = { version = "0.12.3" }
 tokio = { version = "1.40.0", features = ["full"] }
 tokio-util = { version = "0.7.12", features = ["compat"] }
@@ -26,6 +27,3 @@ chrono = ["dep:chrono", "diesel/chrono", "tiberius/chrono"]
 
 [workspace]
 exclude = ["tests"]
-
-[patch.crates-io]
-diesel = { git = "https://github.com/diesel-rs/diesel", branch = "master" }

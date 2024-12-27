@@ -208,7 +208,7 @@ dependencies = [
 [[package]]
 name = "diesel"
 version = "2.2.4"
-source = "git+https://github.com/diesel-rs/diesel?branch=master#9861bcba0f48f64481bf7a312da2bb2d3ea2f208"
+source = "git+https://github.com/diesel-rs/diesel?branch=master#e0400b109ea866b8d82dc3f5e6e6c2d9c65e3cd4"
 dependencies = [
  "chrono",
  "diesel_derives",
@@ -218,7 +218,7 @@ dependencies = [
 [[package]]
 name = "diesel_derives"
 version = "2.2.0"
-source = "git+https://github.com/diesel-rs/diesel?branch=master#9861bcba0f48f64481bf7a312da2bb2d3ea2f208"
+source = "git+https://github.com/diesel-rs/diesel?branch=master#e0400b109ea866b8d82dc3f5e6e6c2d9c65e3cd4"
 dependencies = [
  "diesel_table_macro_syntax",
  "dsl_auto_type",
@@ -243,7 +243,7 @@ dependencies = [
 [[package]]
 name = "diesel_table_macro_syntax"
 version = "0.2.0"
-source = "git+https://github.com/diesel-rs/diesel?branch=master#9861bcba0f48f64481bf7a312da2bb2d3ea2f208"
+source = "git+https://github.com/diesel-rs/diesel?branch=master#e0400b109ea866b8d82dc3f5e6e6c2d9c65e3cd4"
 dependencies = [
  "syn",
 ]
@@ -263,7 +263,7 @@ checksum = "75b325c5dbd37f80359721ad39aca5a29fb04c89279657cffdda8736d0c0b9d2"
 [[package]]
 name = "dsl_auto_type"
 version = "0.1.0"
-source = "git+https://github.com/diesel-rs/diesel?branch=master#9861bcba0f48f64481bf7a312da2bb2d3ea2f208"
+source = "git+https://github.com/diesel-rs/diesel?branch=master#e0400b109ea866b8d82dc3f5e6e6c2d9c65e3cd4"
 dependencies = [
  "darling",
  "either",

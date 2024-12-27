@@ -78,7 +78,7 @@ where
         ) = match transaction_state.in_transaction {
             Some(ref in_transaction) => (
                 match in_transaction.transaction_depth.get() {
-                    1 => (Cow::Borrowed("ROLLBACK"), true),
+                    1 => (Cow::Borrowed("ROLLBACK TRANSACTION"), true),
                     depth_gt1 => (
                         Cow::Owned(format!(
                             "ROLLBACK TRANSACTION diesel_savepoint_{}",
@@ -172,7 +172,7 @@ where
             Some(transaction_depth) => (
                 // TODO: Investigate why a test fails because of this.
                 Cow::Owned(format!(
-                    "COMMIT diesel_savepoint_{}",
+                    "COMMIT TRANSACTION diesel_savepoint_{}",
                     transaction_depth.get() - 1
                 )),
                 false,

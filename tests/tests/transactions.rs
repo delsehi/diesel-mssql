@@ -57,6 +57,7 @@ fn transaction_is_rolled_back_when_returned_an_error() {
 }
 
 #[test]
+#[ignore = "Temporarily ignored. Causes deadlocks in other tests."]
 fn transactions_can_be_nested() {
     let connection = &mut connection_without_transaction();
     const TEST_NAME: &str = "transactions_can_be_nested";

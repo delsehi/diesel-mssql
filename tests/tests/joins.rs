@@ -92,9 +92,10 @@ fn join_boxed_query() {
     let connection = &mut connection_with_sean_and_tess_in_users_table();
 
     diesel::sql_query(
-        "INSERT INTO posts (id, user_id, title) VALUES
+        "SET IDENTITY_INSERT posts ON;
+        INSERT INTO posts (id, user_id, title) VALUES
         (1, 1, 'Hello'),
-        (2, 2, 'World')
+        (2, 2, 'World');SET IDENTITY_INSERT posts OFF;
     ",
     )
     .execute(connection)

@@ -270,6 +270,7 @@ fn derive_identifiable_with_composite_pk() {
 }
 
 #[test]
+#[ignore = "Identity insert is not allowed with DEFAULT in SQL Server."]
 fn derive_insertable_with_option_for_not_null_field_with_default() {
     #[derive(Insertable)]
     #[diesel(table_name = users)]

@@ -271,7 +271,10 @@ where
         self.group_by.walk_ast(out.reborrow())?;
         self.having.walk_ast(out.reborrow())?;
         match self.order {
-            Some(ref order) => order.walk_ast(out.reborrow())?,
+            Some(ref order) => {
+                out.push_sql(" ORDER BY ");
+                order.walk_ast(out.reborrow())?;
+            },
             // if we have no order clause but a limit/offset clause
             // we need to generate a fake order statement
             None if self.limit_offset.limit.is_some() || self.limit_offset.offset.is_some() => {

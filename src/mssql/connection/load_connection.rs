@@ -32,7 +32,7 @@ impl LoadConnection<DefaultLoadingMode> for MssqlConnection {
         use diesel::result::{DatabaseErrorKind, Error};
         match query_stream {
             Err(e) => {
-                return Err(Error::DatabaseError(
+                Err(Error::DatabaseError(
                     DatabaseErrorKind::Unknown,
                     Box::new(e.to_string()),
                 ))

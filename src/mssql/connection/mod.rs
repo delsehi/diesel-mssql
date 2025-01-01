@@ -38,13 +38,13 @@ impl SimpleConnection for MssqlConnection {
         }
         let result = self.rt.block_on(self.client.simple_query(query));
         use diesel::result::{DatabaseErrorKind, Error};
-        return match result {
+        match result {
             Err(e) => Err(Error::DatabaseError(
                 DatabaseErrorKind::Unknown,
                 Box::new(e.to_string()),
             )),
             Ok(_) => Ok(()),
-        };
+        }
     }
 }
 
@@ -139,9 +139,9 @@ impl Connection for MssqlConnection {
             Ok(rows_affected) => {
                 let rows_affected = rows_affected.rows_affected().first();
                 match rows_affected {
-                    Some(rows_affected) => return Ok(*rows_affected as usize),
+                    Some(rows_affected) => Ok(*rows_affected as usize),
                     None => {
-                        return Err(Error::DatabaseError(
+                        Err(Error::DatabaseError(
                             DatabaseErrorKind::Unknown,
                             Box::new("Could not get rows affected".to_string()),
                         ))
@@ -149,7 +149,7 @@ impl Connection for MssqlConnection {
                 }
             }
             Err(e) => {
-                return Err(Error::DatabaseError(
+                Err(Error::DatabaseError(
                     DatabaseErrorKind::Unknown,
                     Box::new(e.to_string()),
                 ))

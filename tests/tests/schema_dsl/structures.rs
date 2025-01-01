@@ -13,7 +13,7 @@ impl<'a, Cols> CreateTable<'a, Cols> {
     }
 }
 
-impl<'a, Cols, Conn> RunQueryDsl<Conn> for CreateTable<'a, Cols> {}
+impl<Cols, Conn> RunQueryDsl<Conn> for CreateTable<'_, Cols> {}
 
 pub struct Column<'a, T> {
     name: &'a str,
@@ -58,7 +58,7 @@ pub struct AutoIncrement<Col>(Col);
 
 pub struct NotNull<Col>(Col);
 
-impl<'a, T> NotNull<Column<'a, T>> {
+impl<T> NotNull<Column<'_, T>> {
     pub fn default(self, expr: &str) -> Default<'_, Self> {
         Default {
             column: self,
@@ -76,7 +76,7 @@ use diesel::backend::*;
 use diesel::query_builder::*;
 use diesel::result::QueryResult;
 
-impl<'a, DB, Cols> QueryFragment<DB> for CreateTable<'a, Cols>
+impl<DB, Cols> QueryFragment<DB> for CreateTable<'_, Cols>
 where
     DB: Backend,
     Cols: QueryFragment<DB>,
@@ -95,13 +95,13 @@ where
     }
 }
 
-impl<'a, Cols> QueryId for CreateTable<'a, Cols> {
+impl<Cols> QueryId for CreateTable<'_, Cols> {
     type QueryId = ();
 
     const HAS_STATIC_QUERY_ID: bool = false;
 }
 
-impl<'a, DB, T> QueryFragment<DB> for Column<'a, T>
+impl<DB, T> QueryFragment<DB> for Column<'_, T>
 where
     DB: Backend,
 {
@@ -114,7 +114,7 @@ where
     }
 }
 
-impl<'a, Cols> QueryId for Column<'a, Cols> {
+impl<Cols> QueryId for Column<'_, Cols> {
     type QueryId = ();
 
     const HAS_STATIC_QUERY_ID: bool = false;
@@ -145,8 +145,8 @@ impl<Col> QueryId for AutoIncrement<Col> {
     const HAS_STATIC_QUERY_ID: bool = false;
 }
 
-impl<'a> QueryFragment<Mssql>
-    for AutoIncrement<PrimaryKey<Column<'a, diesel::sql_types::Integer>>>
+impl QueryFragment<Mssql>
+    for AutoIncrement<PrimaryKey<Column<'_, diesel::sql_types::Integer>>>
 {
     fn walk_ast<'b>(&'b self, mut out: AstPass<'_, 'b, Mssql>) -> QueryResult<()> {
         out.unsafe_to_cache_prepared();
@@ -175,7 +175,7 @@ impl<Col> QueryId for NotNull<Col> {
     const HAS_STATIC_QUERY_ID: bool = false;
 }
 
-impl<'a, DB, Col> QueryFragment<DB> for Default<'a, Col>
+impl<DB, Col> QueryFragment<DB> for Default<'_, Col>
 where
     DB: Backend,
     Col: QueryFragment<DB>,
@@ -189,7 +189,7 @@ where
     }
 }
 
-impl<'a, Col> QueryId for Default<'a, Col> {
+impl<Col> QueryId for Default<'_, Col> {
     type QueryId = ();
 
     const HAS_STATIC_QUERY_ID: bool = false;

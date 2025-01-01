@@ -15,13 +15,10 @@ impl FromSql<Date, Mssql> for NaiveDate {
     fn from_sql(
         bytes: <Mssql as diesel::backend::Backend>::RawValue<'_>,
     ) -> diesel::deserialize::Result<Self> {
-        match bytes {
-            tiberius::ColumnData::Date(Some(date)) => {
-                let dt = NaiveDate::from_ymd_opt(1, 1, 1).unwrap()
-                    + chrono::Duration::days(date.days().into());
-                return Ok(dt);
-            }
-            _ => {}
+        if let tiberius::ColumnData::Date(Some(date)) = bytes {
+            let dt = NaiveDate::from_ymd_opt(1, 1, 1).unwrap()
+                + chrono::Duration::days(date.days().into());
+            return Ok(dt);
         }
         // TODO: Better error handling
         diesel::deserialize::Result::Err(Box::new(std::io::Error::new(
@@ -102,14 +99,11 @@ impl diesel::deserialize::FromSql<Time, Mssql> for NaiveTime {
     fn from_sql(
         bytes: <Mssql as diesel::backend::Backend>::RawValue<'_>,
     ) -> diesel::deserialize::Result<Self> {
-        match bytes {
-            tiberius::ColumnData::Time(Some(time)) => {
-                let ns = time.increments() as i64 * 10i64.pow(9 - time.scale() as u32);
-                let test =
-                    NaiveTime::from_hms_opt(0, 0, 0).unwrap() + chrono::Duration::nanoseconds(ns);
-                return Ok(test);
-            }
-            _ => {}
+        if let tiberius::ColumnData::Time(Some(time)) = bytes {
+            let ns = time.increments() as i64 * 10i64.pow(9 - time.scale() as u32);
+            let test =
+                NaiveTime::from_hms_opt(0, 0, 0).unwrap() + chrono::Duration::nanoseconds(ns);
+            return Ok(test);
         }
         // TODO: Better error handling
         diesel::deserialize::Result::Err(Box::new(std::io::Error::new(

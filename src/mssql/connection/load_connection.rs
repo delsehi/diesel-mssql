@@ -26,12 +26,22 @@ impl LoadConnection<DefaultLoadingMode> for MssqlConnection {
         let mut query_builder = MssqlQueryBuilder::new();
         source.to_sql(&mut query_builder, &Mssql).unwrap();
         let sql = query_builder.finish();
-        let debug_sql = sql.clone();
         let mut query = tiberius::Query::new(sql);
         bind_values_to_query(bc.binds, &mut query);
-        let query_stream = self.rt.block_on(query.query(&mut self.client)).expect(&debug_sql);
-        let rows = self.rt.block_on(query_stream.into_first_result()).unwrap();
-        let vecdeque = std::collections::VecDeque::from(rows);
-        Ok(Cursor::new(vecdeque))
+        let query_stream = self.rt.block_on(query.query(&mut self.client));
+        use diesel::result::{DatabaseErrorKind, Error};
+        match query_stream {
+            Err(e) => {
+                return Err(Error::DatabaseError(
+                    DatabaseErrorKind::Unknown,
+                    Box::new(e.to_string()),
+                ))
+            }
+            Ok(qs) => {
+                let rows = self.rt.block_on(qs.into_first_result()).unwrap();
+                let vecdeque = std::collections::VecDeque::from(rows);
+                Ok(Cursor::new(vecdeque))
+            }
+        }
     }
 }

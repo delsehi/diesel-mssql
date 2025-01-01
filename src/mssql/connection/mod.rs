@@ -36,12 +36,15 @@ impl SimpleConnection for MssqlConnection {
                 &diesel::connection::StrQueryHelper::new(query),
             ));
         }
-        let _ = self
-            .rt
-            .block_on(self.client.simple_query(query))
-            // TODO: Handle this error
-            .unwrap_or_else(|_| panic!("Query failed: {}", query));
-        Ok(())
+        let result = self.rt.block_on(self.client.simple_query(query));
+        use diesel::result::{DatabaseErrorKind, Error};
+        return match result {
+            Err(e) => Err(Error::DatabaseError(
+                DatabaseErrorKind::Unknown,
+                Box::new(e.to_string()),
+            )),
+            Ok(_) => Ok(()),
+        };
     }
 }
 
@@ -128,15 +131,30 @@ impl Connection for MssqlConnection {
         let mut query_builder = MssqlQueryBuilder::new();
         source.to_sql(&mut query_builder, &Mssql).unwrap();
         let sql = query_builder.finish();
-        let my_sql = sql.clone();
         let mut query = Query::new(sql);
         bind_values_to_query(bc.binds, &mut query);
-        let result = self
-            .rt
-            .block_on(query.execute(&mut self.client))
-            .expect(&my_sql);
-        let rows_affected = *result.rows_affected().first().unwrap() as usize;
-        Ok(rows_affected)
+        let result = self.rt.block_on(query.execute(&mut self.client));
+        use diesel::result::{DatabaseErrorKind, Error};
+        match result {
+            Ok(rows_affected) => {
+                let rows_affected = rows_affected.rows_affected().first();
+                match rows_affected {
+                    Some(rows_affected) => return Ok(*rows_affected as usize),
+                    None => {
+                        return Err(Error::DatabaseError(
+                            DatabaseErrorKind::Unknown,
+                            Box::new("Could not get rows affected".to_string()),
+                        ))
+                    }
+                }
+            }
+            Err(e) => {
+                return Err(Error::DatabaseError(
+                    DatabaseErrorKind::Unknown,
+                    Box::new(e.to_string()),
+                ))
+            }
+        }
     }
 
     fn transaction_state(

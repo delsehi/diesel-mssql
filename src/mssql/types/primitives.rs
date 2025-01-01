@@ -31,6 +31,9 @@ impl FromSql<sql_types::SmallInt, Mssql> for i16 {
         if let ColumnData::I16(Some(val)) = bytes {
             return Ok(val);
         };
+        if let ColumnData::U8(Some(val)) = bytes {
+            return Ok(val.into());
+        };
         diesel::deserialize::Result::Err(SERIALIZE_ERROR_MSG.into())
     }
 }
@@ -100,6 +103,22 @@ impl FromSql<sql_types::Decimal, Mssql> for f64 {
     }
 }
 impl ToSql<sql_types::Decimal, Mssql> for f64 {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Mssql>) -> diesel::serialize::Result {
+        out.set_value(BindValue::Decimal(self));
+        Ok(IsNull::No)
+    }
+}
+
+impl FromSql<sql_types::Double, Mssql> for f64 {
+    fn from_sql(bytes: ColumnData<'_>) -> deserialize::Result<Self> {
+        if let ColumnData::F64(Some(val)) = bytes {
+            return Ok(val);
+        };
+        diesel::deserialize::Result::Err(SERIALIZE_ERROR_MSG.into())
+    }
+}
+
+impl ToSql<sql_types::Double, Mssql> for f64 {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Mssql>) -> diesel::serialize::Result {
         out.set_value(BindValue::Decimal(self));
         Ok(IsNull::No)

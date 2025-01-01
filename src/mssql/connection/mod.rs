@@ -199,6 +199,9 @@ fn bind_values_to_query<'a>(bind_values: Vec<BindValue<'a>>, query: &mut Query<'
             BindValue::SmallInt(val) => {
                 query.bind(*val);
             }
+            BindValue::TinyInt(val) => {
+                query.bind(*val);
+            }
             BindValue::Time(val) => {
                 query.bind(*val);
             }

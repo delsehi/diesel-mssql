@@ -14,6 +14,7 @@ pub enum BindValue<'a> {
     Float(&'a f32),
     Integer(&'a i32),
     SmallInt(&'a i16),
+    TinyInt(&'a u8),
     Text(&'a str),
     #[cfg(feature = "chrono")]
     Time(&'a chrono::NaiveTime),

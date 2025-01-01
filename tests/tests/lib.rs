@@ -18,4 +18,4 @@ mod limit_offset;
 mod order;
 mod schema_dsl;
 mod select;
-// mod types;
+mod types;

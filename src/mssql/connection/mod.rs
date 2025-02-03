@@ -140,20 +140,16 @@ impl Connection for MssqlConnection {
                 let rows_affected = rows_affected.rows_affected().first();
                 match rows_affected {
                     Some(rows_affected) => Ok(*rows_affected as usize),
-                    None => {
-                        Err(Error::DatabaseError(
-                            DatabaseErrorKind::Unknown,
-                            Box::new("Could not get rows affected".to_string()),
-                        ))
-                    }
+                    None => Err(Error::DatabaseError(
+                        DatabaseErrorKind::Unknown,
+                        Box::new("Could not get rows affected".to_string()),
+                    )),
                 }
             }
-            Err(e) => {
-                Err(Error::DatabaseError(
-                    DatabaseErrorKind::Unknown,
-                    Box::new(e.to_string()),
-                ))
-            }
+            Err(e) => Err(Error::DatabaseError(
+                DatabaseErrorKind::Unknown,
+                Box::new(e.to_string()),
+            )),
         }
     }
 
@@ -169,10 +165,6 @@ impl Connection for MssqlConnection {
 
     fn set_instrumentation(&mut self, instrumentation: impl diesel::connection::Instrumentation) {
         self.instrumentation = Some(Box::new(instrumentation));
-    }
-
-    fn set_prepared_statement_cache_size(&mut self, _size: diesel::connection::CacheSize) {
-        todo!()
     }
 }
 

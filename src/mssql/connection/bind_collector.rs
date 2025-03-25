@@ -1,5 +1,9 @@
 use crate::mssql::Mssql;
-use diesel::{query_builder::BindCollector, sql_types::HasSqlType};
+use diesel::{
+    QueryResult,
+    query_builder::BindCollector,
+    sql_types::{HasSqlType, TypeMetadata},
+};
 
 pub struct MssqlBindCollector<'a> {
     pub(crate) binds: Vec<BindValue<'a>>,
@@ -9,8 +13,8 @@ pub enum BindValue<'a> {
     Bigint(&'a i64),
     Binary(&'a [u8]),
     Bool(&'a bool),
-    // Double(),
     Decimal(&'a f64),
+    Double(&'a f64),
     Float(&'a f32),
     Integer(&'a i32),
     SmallInt(&'a i16),
@@ -43,14 +47,14 @@ impl<'a> BindCollector<'a, Mssql> for MssqlBindCollector<'a> {
     fn push_bound_value<T, U>(
         &mut self,
         bind: &'a U,
-        metadata_lookup: &mut <Mssql as diesel::sql_types::TypeMetadata>::MetadataLookup,
-    ) -> diesel::QueryResult<()>
+        metadata_lookup: &mut <Mssql as TypeMetadata>::MetadataLookup,
+    ) -> QueryResult<()>
     where
-        Mssql: diesel::backend::Backend + diesel::sql_types::HasSqlType<T>,
+        Mssql: HasSqlType<T>,
         U: diesel::serialize::ToSql<T, Mssql> + ?Sized + 'a,
     {
-        let e = Mssql::metadata(metadata_lookup);
-        let out = BindValue::NotSet(e);
+        let metadata = Mssql::metadata(metadata_lookup);
+        let out = BindValue::NotSet(metadata);
         let mut out = diesel::serialize::Output::<Mssql>::new(out, metadata_lookup);
         bind.to_sql(&mut out).unwrap();
         let res = out.into_inner();

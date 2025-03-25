@@ -203,6 +203,9 @@ fn bind_values_to_query<'a>(bind_values: Vec<BindValue<'a>>, query: &mut Query<'
             BindValue::Decimal(val) => {
                 query.bind(*val);
             }
+            BindValue::Double(val) => {
+                query.bind(*val);
+            }
             BindValue::Float(val) => {
                 query.bind(*val);
             }

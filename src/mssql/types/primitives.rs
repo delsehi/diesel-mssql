@@ -43,6 +43,36 @@ impl ToSql<sql_types::SmallInt, Mssql> for i16 {
         Ok(IsNull::No)
     }
 }
+// tinyint u8
+impl FromSql<sql_types::TinyInt, Mssql> for u8 {
+    fn from_sql(bytes: ColumnData<'_>) -> deserialize::Result<Self> {
+        if let ColumnData::U8(Some(val)) = bytes {
+            return Ok(val.into());
+        };
+        diesel::deserialize::Result::Err(SERIALIZE_ERROR_MSG.into())
+    }
+}
+impl ToSql<sql_types::TinyInt, Mssql> for u8 {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Mssql>) -> diesel::serialize::Result {
+        out.set_value(BindValue::TinyInt(self));
+        Ok(IsNull::No)
+    }
+}
+impl FromSql<sql_types::Binary, Mssql> for Vec<u8> {
+    fn from_sql(bytes: ColumnData<'_>) -> deserialize::Result<Self> {
+
+        if let ColumnData::Binary(Some(val)) = bytes {
+            return Ok(val.into());
+        };
+        diesel::deserialize::Result::Err(SERIALIZE_ERROR_MSG.into())
+    }
+}
+impl ToSql<sql_types::Binary, Mssql> for Vec<u8> {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Mssql>) -> diesel::serialize::Result {
+        out.set_value(BindValue::Binary(self));
+        Ok(IsNull::No)
+    }
+}
 // i32
 impl FromSql<sql_types::Integer, Mssql> for i32 {
     fn from_sql(bytes: ColumnData<'_>) -> deserialize::Result<Self> {

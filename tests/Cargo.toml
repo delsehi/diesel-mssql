@@ -1,14 +1,14 @@
 [package]
 name = "tests"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 autotests = false
 publish = false
 
 [dependencies]
 bigdecimal = "0.4.7"
-chrono = "0.4.39"
-diesel = { version = "2.2.7", default_features = false, features = [
+chrono = "0.4.40"
+diesel = { version = "2.2.8", default-features = false, features = [
     "i-implement-a-third-party-backend-and-opt-into-breaking-changes",
     "chrono",
 ] }

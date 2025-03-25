@@ -59,7 +59,7 @@ impl FromSql<Timestamp, Mssql> for NaiveDateTime {
                 return Ok(NaiveDateTime::new(
                     from_days(dt.days() as i64, 1900),
                     from_mins(dt.seconds_fragments() as u32 * 60),
-                ))
+                ));
             }
             tiberius::ColumnData::DateTime2(Some(dt)) => {
                 return Ok(NaiveDateTime::new(
@@ -68,7 +68,7 @@ impl FromSql<Timestamp, Mssql> for NaiveDateTime {
                         + chrono::Duration::nanoseconds(
                             dt.time().increments() as i64 * 10i64.pow(9 - dt.time().scale() as u32),
                         ),
-                ))
+                ));
             }
             tiberius::ColumnData::DateTimeOffset(dt) => todo!(),
             _ => {}

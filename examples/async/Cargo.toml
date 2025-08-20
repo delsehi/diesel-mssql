@@ -1,0 +1,13 @@
+[package]
+name = "async-example"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+diesel_mssql = { path = "../../" }
+async_diesel_mssql = { path = "../../async_diesel_mssql" }
+
+diesel = { version = "2.2.12", default-features = false }
+tokio = { version = "1.44.1", features = ["full"] }
+diesel-async = "0.6.1"

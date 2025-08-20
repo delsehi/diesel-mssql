@@ -4,6 +4,7 @@ use super::row::MssqlRow;
 use super::Mssql;
 use super::MssqlBindCollector;
 use super::MssqlConnection;
+use crate::connection::BlockOn;
 use crate::mssql::query_builder::MssqlQueryBuilder;
 use diesel::connection::{DefaultLoadingMode, LoadConnection};
 use diesel::expression::QueryMetadata;
@@ -28,7 +29,7 @@ impl LoadConnection<DefaultLoadingMode> for MssqlConnection {
         let sql = query_builder.finish();
         let mut query = tiberius::Query::new(sql);
         bind_values_to_query(bc.binds, &mut query);
-        let query_stream = self.rt.block_on(query.query(&mut self.client));
+        let query_stream = self.tokio.block_on(query.query(&mut self.client));
         use diesel::result::{DatabaseErrorKind, Error};
         match query_stream {
             Err(e) => {
@@ -38,7 +39,7 @@ impl LoadConnection<DefaultLoadingMode> for MssqlConnection {
                 ))
             }
             Ok(qs) => {
-                let rows = self.rt.block_on(qs.into_first_result()).unwrap();
+                let rows = self.tokio.block_on(qs.into_first_result()).unwrap();
                 let vecdeque = std::collections::VecDeque::from(rows);
                 Ok(Cursor::new(vecdeque))
             }

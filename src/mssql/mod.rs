@@ -1,5 +1,5 @@
 pub(crate) mod backend;
-pub(crate) mod connection;
+pub mod connection;
 pub mod query_builder;
 pub(crate) mod types;
 

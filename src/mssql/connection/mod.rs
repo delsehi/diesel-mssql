@@ -4,29 +4,75 @@ mod load_connection;
 mod row;
 mod transaction_manager;
 
+use super::Mssql;
 use crate::mssql::query_builder::MssqlQueryBuilder;
 pub use bind_collector::{BindValue, MssqlBindCollector};
 use diesel::{
+    Connection, QueryResult,
     connection::{
         ConnectionSealed, Instrumentation, InstrumentationEvent, SimpleConnection,
         TransactionManager,
     },
     migration::MigrationConnection,
     query_builder::{QueryBuilder, QueryFragment, QueryId},
-    Connection, QueryResult,
 };
+pub use row::MssqlRow;
 use tiberius::{Client, Query};
-use tokio::{net::TcpStream, runtime::Runtime};
+use tokio::{
+    net::TcpStream,
+    runtime::{Handle, Runtime},
+};
 use tokio_util::compat::{Compat, TokioAsyncWriteCompatExt};
-use transaction_manager::MssqlTransactionManager;
-
-use super::Mssql;
+pub use transaction_manager::MssqlTransactionManager;
 
 pub struct MssqlConnection {
     client: Client<Compat<TcpStream>>,
     transaction_state: MssqlTransactionManager,
     instrumentation: Option<Box<dyn Instrumentation>>,
-    rt: Runtime,
+    tokio: Tokio,
+}
+
+pub(crate) struct Tokio {
+    handle: Option<Handle>,
+    runtime: Option<Runtime>,
+}
+pub(crate) trait BlockOn {
+    fn block_on<F>(&self, f: F) -> F::Output
+    where
+        F: Future;
+    fn get_runtime() -> Self;
+}
+impl BlockOn for Tokio {
+    fn block_on<F>(&self, f: F) -> F::Output
+    where
+        F: Future,
+    {
+        if let Some(handle) = &self.handle {
+            handle.block_on(f)
+        } else if let Some(runtime) = &self.runtime {
+            runtime.block_on(f)
+        } else {
+            unreachable!()
+        }
+    }
+
+    fn get_runtime() -> Self {
+        if let Ok(handle) = tokio::runtime::Handle::try_current() {
+            Self {
+                handle: Some(handle),
+                runtime: None,
+            }
+        } else {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap();
+            Self {
+                handle: None,
+                runtime: Some(runtime),
+            }
+        }
+    }
 }
 
 impl SimpleConnection for MssqlConnection {
@@ -36,7 +82,8 @@ impl SimpleConnection for MssqlConnection {
                 &diesel::connection::StrQueryHelper::new(query),
             ));
         }
-        let result = self.rt.block_on(self.client.simple_query(query));
+        let result = self.tokio.block_on(self.client.simple_query(query));
+
         use diesel::result::{DatabaseErrorKind, Error};
         match result {
             Err(e) => Err(Error::DatabaseError(
@@ -95,18 +142,15 @@ impl Connection for MssqlConnection {
     type TransactionManager = MssqlTransactionManager;
 
     fn establish(database_url: &str) -> diesel::ConnectionResult<Self> {
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            // TODO: Handle error
-            .expect("Could not create tokio runtime");
+        let tokio = Tokio::get_runtime();
+
         let config = tiberius::Config::from_ado_string(database_url).unwrap();
-        let tcp = rt
+        let tcp = tokio
             .block_on(tokio::net::TcpStream::connect(config.get_addr()))
             // TODO: Handle error
             .expect("Could not create tcp stream");
         tcp.set_nodelay(true).expect("Could not set no_delay");
-        let client = rt
+        let client = tokio
             .block_on(Client::connect(config, tcp.compat_write()))
             .expect("Could not connect to client");
         let transaction_state = MssqlTransactionManager {
@@ -116,7 +160,7 @@ impl Connection for MssqlConnection {
         let instrumentation = diesel::connection::get_default_instrumentation();
         Ok(MssqlConnection {
             client,
-            rt,
+            tokio,
             instrumentation,
             transaction_state,
         })
@@ -133,7 +177,7 @@ impl Connection for MssqlConnection {
         let sql = query_builder.finish();
         let mut query = Query::new(sql);
         bind_values_to_query(bc.binds, &mut query);
-        let result = self.rt.block_on(query.execute(&mut self.client));
+        let result = self.tokio.block_on(query.execute(&mut self.client));
         use diesel::result::{DatabaseErrorKind, Error};
         match result {
             Ok(rows_affected) => {
@@ -176,14 +220,15 @@ impl MigrationConnection for MssqlConnection {
     }
 }
 
-fn bind_values_to_query<'a>(bind_values: Vec<BindValue<'a>>, query: &mut Query<'a>) {
+pub fn bind_values_to_query(bind_values: Vec<BindValue>, query: &mut Query) {
     for bind_val in bind_values.into_iter() {
         match bind_val {
             BindValue::Integer(val) => {
                 query.bind(*val);
             }
             BindValue::Text(val) => {
-                query.bind(val);
+                // TODO: Remove to_owned
+                query.bind(val.to_owned());
             }
             BindValue::Date(val) => {
                 query.bind(*val);
@@ -198,7 +243,8 @@ fn bind_values_to_query<'a>(bind_values: Vec<BindValue<'a>>, query: &mut Query<'
                 query.bind(*val);
             }
             BindValue::Binary(val) => {
-                query.bind(val);
+                // TODO: Remove to_owned
+                query.bind(val.to_owned());
             }
             BindValue::Decimal(val) => {
                 query.bind(*val);

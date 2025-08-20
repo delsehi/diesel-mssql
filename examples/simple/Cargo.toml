@@ -1,0 +1,9 @@
+[package]
+name = "simple"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+diesel_mssql = { path = "../../" }
+diesel = { version = "2.2.8", default-features = false }

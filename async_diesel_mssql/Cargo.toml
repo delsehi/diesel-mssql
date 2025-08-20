@@ -1,0 +1,16 @@
+[package]
+name = "async_diesel_mssql"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+diesel-async = { version = "0.6.1" }
+diesel_mssql = { path = "../", features = ["export_more"] }
+diesel = { version = "2.2.12", default-features = false, features = [
+    "i-implement-a-third-party-backend-and-opt-into-breaking-changes",
+] }
+tiberius = { version = "0.12.3" }
+tokio = { version = "1.4.1", features = ["full"] }
+tokio-util = { version = "0.7.14", features = ["compat"] }
+async-trait = "0.1.88"
+futures-util = "0.3.31"

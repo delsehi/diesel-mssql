@@ -6,7 +6,7 @@ use diesel::{
 };
 
 pub struct MssqlBindCollector<'a> {
-    pub(crate) binds: Vec<BindValue<'a>>,
+    pub binds: Vec<BindValue<'a>>,
 }
 
 pub enum BindValue<'a> {
